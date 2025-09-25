@@ -4,18 +4,12 @@ import {
   Column,
   ManyToOne,
   JoinColumn,
-  ManyToMany,
   CreateDateColumn,
   UpdateDateColumn,
-  OneToMany,
   BeforeInsert,
   BeforeUpdate,
 } from 'typeorm';
 import { Role } from './Role';
-import { Company } from './Company';
-import { Group } from './Group';
-import { Feedback } from './Feedback';
-import { Department } from './Department';
 import { Tenant } from './Tenant';
 import {
   IsString,
@@ -75,15 +69,6 @@ export class User {
   @IsOptional()
   manager?: User;
 
-  @ManyToOne(() => Department, (department) => department.id)
-  @JoinColumn({ name: 'department' })
-  @IsOptional()
-  department?: Department;
-
-  @ManyToOne(() => Company, (company) => company.id)
-  @JoinColumn({ name: 'companyId' })
-  company!: Company;
-
   @ManyToOne(() => Tenant)
   @JoinColumn({ name: 'tenantId' })
   tenantId!: Tenant;
@@ -135,12 +120,6 @@ export class User {
   @Column({ default: false })
   @IsBoolean()
   isDeleted?: boolean;
-
-  @OneToMany(() => Feedback, (feedback) => feedback.user)
-  feedbacks?: Feedback[];
-
-  @ManyToMany(() => Group, (group) => group.users)
-  groups!: Group[];
 
   @Column({ type: 'timestamp', nullable: true })
   @IsOptional()

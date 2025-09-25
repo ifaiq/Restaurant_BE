@@ -8,8 +8,6 @@ import {
   UpdateDateColumn,
   CreateDateColumn,
 } from 'typeorm';
-import { IsNotEmpty } from 'class-validator';
-import { Company } from './Company';
 import { User } from './User';
 import { Tenant } from './Tenant';
 
@@ -17,11 +15,6 @@ import { Tenant } from './Tenant';
 export class DocumentType {
   @PrimaryGeneratedColumn()
   id!: number;
-
-  @ManyToOne(() => Company)
-  @JoinColumn({ name: 'companyId' })
-  @IsNotEmpty({ message: 'Company is required' })
-  company!: Company;
 
   @Column({ nullable: true })
   documentType!: string;

@@ -97,8 +97,6 @@ export class UserService {
         },
         relations: {
           role: true,
-          company: true,
-          department: true,
           manager: true,
         },
       });
@@ -125,8 +123,6 @@ export class UserService {
         },
         relations: {
           role: true,
-          company: true,
-          department: true,
           manager: true,
         },
       });
