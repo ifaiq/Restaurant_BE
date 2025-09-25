@@ -99,54 +99,6 @@ export async function updateAllUsersDocViewable(
   }
 }
 
-export async function addERPUser(
-  req: Request,
-  res: Response,
-): Promise<apiResponse> {
-  try {
-    const { status, ...data } = await UserService.addERPUser();
-    return res.status(status).send(data);
-  } catch (error: any) {
-    return res.status(500).send({ error: error.message });
-  }
-}
-
-export async function changeUserStatus(
-  req: Request,
-  res: Response,
-): Promise<apiResponse> {
-  try {
-    const { status, ...data } = await UserService.changeUserStatus(req);
-    return res.status(status).send(data);
-  } catch (error: any) {
-    return res.status(500).send({ error: error.message });
-  }
-}
-
-export async function getExampleExcel(
-  req: Request,
-  res: Response,
-): Promise<apiResponse> {
-  try {
-    const { status, ...data } = await UserService.getExampleExcel();
-    return res.status(status).send(data);
-  } catch (error: any) {
-    return res.status(500).send({ error: error.message });
-  }
-}
-
-export async function importExcelUsers(
-  req: Request,
-  res: Response,
-): Promise<apiResponse> {
-  try {
-    const { status, ...data } = await UserService.importUsersFromExcel(req);
-    return res.status(status).send(data);
-  } catch (error: any) {
-    return res.status(500).send({ error: error.message });
-  }
-}
-
 export async function getUserAnalytics(
   req: Request,
   res: Response,

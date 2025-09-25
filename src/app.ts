@@ -1,25 +1,10 @@
 import express, { Request, Response } from 'express';
 import { connectDB } from './config/database';
 import morgan from 'morgan';
-import SSERouter from './routes/sse.route';
 import authRouter from './routes/auth.route';
-import roleRouter from './routes/roles.route';
 import userRouter from './routes/users.route';
-import companyRouter from './routes/company.route';
-import documentTypeRouter from './routes/documentType.route';
-import groupRouter from './routes/groups.route';
-import documentRouter from './routes/document.route';
-import departmentRouter from './routes/department.route';
 import uploadRouter from './routes/uploadFile.route';
-import approvalRouter from './routes/approval.route';
-import feedbackRouter from './routes/feedback.route';
-import clientRouter from './routes/client.route';
-import invoiceRouter from './routes/invoice.route';
 import webhookRouter from './routes/webhook.route';
-import privateDocumentRouter from './routes/privateDocument.route';
-import ticketRouter from './routes/ticket.route';
-import supporttRouter from './routes/userSupport.route';
-import companyConfigRouter from './routes/companyConfig.route';
 import helmet from 'helmet';
 
 import cors from 'cors';
@@ -34,8 +19,6 @@ setupGracefulShutdown([emailWorker]);
 connectDB();
 initializeMongoLogger();
 const app = express();
-
-app.use(SSERouter);
 
 app.use(helmet());
 
@@ -100,24 +83,9 @@ app.use(express.json());
 app.use(morgan('dev'));
 
 app.use('/api/auth', authRouter);
-app.use('/api/roles', roleRouter);
 app.use('/api/users', userRouter);
-app.use('/api/companies', companyRouter);
-app.use('/api/document-type', documentTypeRouter);
-app.use('/api/groups', groupRouter);
-app.use('/api/documents', documentRouter);
-app.use('/api/privateDocuments', privateDocumentRouter);
-app.use('/api/departments', departmentRouter);
 app.use('/api/upload', uploadRouter);
-app.use('/api/approval', approvalRouter);
-app.use('/api/feedback', feedbackRouter);
-app.use('/api/client', clientRouter);
-app.use('/api/invoice', invoiceRouter);
 app.use('/api/webhook', webhookRouter);
-app.use('/api/ticket', ticketRouter);
-app.use('/api/support', supporttRouter);
-app.use('/api/companyConfig', companyConfigRouter);
-
 app.get('/', (req: Request, res: Response) => {
   res.status(404).send('Nobody’s home.💀');
 });

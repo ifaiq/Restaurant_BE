@@ -4,23 +4,17 @@ import {
   getUserById,
   deleteUser,
   updateUser,
-  addERPUser,
   createUser,
   getAllStaff,
-  changeUserStatus,
   getUserAnalytics,
   getAdminAnalytics,
-  importExcelUsers,
-  getExampleExcel,
   getUserProfile,
   getUserUsageAnalytics,
   updateAllUsersDocViewable,
 } from '../controllers/users.controller';
 import { verifyToken, verifyTokenAndAdmin } from '../middlewares/verification';
 import { permissions } from '../middlewares/permission';
-import multer from 'multer';
 
-const upload = multer();
 const router = Router();
 
 router.get('/allUsers', verifyTokenAndAdmin, permissions, async (req, res) => {
@@ -74,18 +68,14 @@ router.put(
   },
 );
 
-router.put(
-  '/status/:id',
-  verifyTokenAndAdmin,
-  permissions,
-  async (req, res) => {
-    await changeUserStatus(req, res);
-  },
-);
-
-router.post('/addERP', verifyTokenAndAdmin, permissions, async (req, res) => {
-  await addERPUser(req, res);
-});
+// router.put(
+//   '/status/:id',
+//   verifyTokenAndAdmin,
+//   permissions,
+//   async (req, res) => {
+//     await changeUserStatus(req, res);
+//   },
+// );
 
 router.post('/addUser', verifyTokenAndAdmin, permissions, async (req, res) => {
   await createUser(req, res);
@@ -96,20 +86,6 @@ router.delete(
   permissions,
   async (req, res) => {
     await deleteUser(req, res);
-  },
-);
-
-router.get('/getExcel', verifyTokenAndAdmin, permissions, async (req, res) => {
-  await getExampleExcel(req, res);
-});
-
-router.post(
-  '/addExcel',
-  upload.single('file'),
-  verifyTokenAndAdmin,
-  permissions,
-  async (req, res) => {
-    await importExcelUsers(req, res);
   },
 );
 
