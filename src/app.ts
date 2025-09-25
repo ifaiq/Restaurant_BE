@@ -4,7 +4,6 @@ import morgan from 'morgan';
 import authRouter from './routes/auth.route';
 import userRouter from './routes/users.route';
 import uploadRouter from './routes/uploadFile.route';
-import webhookRouter from './routes/webhook.route';
 import helmet from 'helmet';
 
 import cors from 'cors';
@@ -85,7 +84,6 @@ app.use(morgan('dev'));
 app.use('/api/auth', authRouter);
 app.use('/api/users', userRouter);
 app.use('/api/upload', uploadRouter);
-app.use('/api/webhook', webhookRouter);
 app.get('/', (req: Request, res: Response) => {
   res.status(404).send('Nobody’s home.💀');
 });
