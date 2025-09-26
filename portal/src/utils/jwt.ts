@@ -8,5 +8,5 @@ export const jsonWeb = async (user: any, secret: string): Promise<string> => {
     secret,
     { expiresIn: '1d' },
   );
-  return token;
+  return `Bearer ${token}`;
 };
