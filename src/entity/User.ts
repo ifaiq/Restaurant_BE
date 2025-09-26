@@ -19,12 +19,13 @@ import {
   IsDate,
   IsBoolean,
 } from 'class-validator';
+import { Restaurant } from './Restaurant';
 
 export enum RoleName {
-  USER = 'USER',
+  CUSTOMER = 'CUSTOMER',
   STAFF = 'STAFF',
+  OWNER = 'OWNER',
   ADMIN = 'ADMIN',
-  SUPER_ADMIN = 'SUPER_ADMIN',
 }
 
 @Entity()
@@ -58,10 +59,10 @@ export class User {
   @IsString()
   country?: string;
 
-  @Column({ nullable: true })
+  @ManyToOne(() => Restaurant, { nullable: true })
+  @JoinColumn({ name: 'restaurantId' })
   @IsOptional()
-  @IsString()
-  position?: string;
+  restaurantId?: Restaurant;
 
   @ManyToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'manager' })
@@ -93,16 +94,9 @@ export class User {
   @Column({
     type: 'enum',
     enum: RoleName,
-    default: RoleName.USER,
+    default: RoleName.CUSTOMER,
   })
   roleName?: RoleName;
-
-  // @ManyToOne(() => Role, (role) => role.users, {
-  //   nullable: true,
-  //   onDelete: 'CASCADE',
-  // })
-  // @IsOptional()
-  // role?: Role;
 
   @Column({ default: false })
   @IsBoolean()

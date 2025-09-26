@@ -16,16 +16,8 @@ export class UserService {
   static async createUser(req: Request | any): Promise<apiResponse> {
     try {
       const tenantId = req?.tenantId;
-      const {
-        email,
-        name,
-        doj,
-        position,
-        manager,
-        country,
-        employeeId,
-        roleName,
-      } = req.body;
+      const { email, name, doj, manager, country, employeeId, roleName } =
+        req.body;
       const existingUser = await this.userRepo.findOneBy({ email, tenantId });
       if (existingUser) {
         return { status: 404, message: 'User with this email already exists!' };
@@ -47,7 +39,6 @@ export class UserService {
       newUser.email = email;
       newUser.password = hashedPassword;
       newUser.name = name;
-      newUser.position = position;
       newUser.doj = doj;
       newUser.manager = manager ? manager : null;
       newUser.country = country;
@@ -152,15 +143,8 @@ export class UserService {
       const { id } = req.params;
       const tenantId = req?.tenantId;
 
-      const {
-        country,
-        doj,
-        manager,
-        position,
-        employeeId,
-        name,
-        isDocViewable,
-      } = req.body;
+      const { country, doj, manager, employeeId, name, isDocViewable } =
+        req.body;
       let userData = await this.userRepo.findOne({
         where: {
           id: Number(id),
@@ -184,7 +168,6 @@ export class UserService {
         }
       }
 
-      userData.position = position ?? userData.position;
       userData.name = name ?? userData.name;
       userData.country = country ?? userData.country;
       userData.doj = doj ?? userData.doj;
@@ -240,8 +223,8 @@ export class UserService {
   ): Promise<apiResponse> {
     try {
       const userTypeCondition =
-        type === RoleName.USER
-          ? [RoleName.USER, RoleName.STAFF]
+        type === RoleName.OWNER
+          ? [RoleName.OWNER, RoleName.STAFF]
           : [RoleName.STAFF];
       const tenantId = req?.tenantId;
       const page = parseInt(req.query.page as string) || 1;

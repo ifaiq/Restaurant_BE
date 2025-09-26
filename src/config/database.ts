@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 dotenv.config({ path: '../.env' });
 import { logger } from '../utils/logger';
 import { Tenant } from '../entity/Tenant';
+import { Restaurant } from '../entity/Restaurant';
 
 export const AppDataSource = new DataSource({
   type: 'postgres',
@@ -12,7 +13,7 @@ export const AppDataSource = new DataSource({
   username: process.env.POSTGRES_USER,
   password: process.env.POSTGRES_PASSWORD,
   database: process.env.POSTGRES_NAME,
-  entities: [User, Tenant],
+  entities: [User, Tenant, Restaurant],
   synchronize: true,
 });
 

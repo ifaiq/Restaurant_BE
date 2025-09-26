@@ -2,12 +2,12 @@ import { Request } from 'express';
 import { apiResponse } from '../types/res';
 import dotenv from 'dotenv';
 dotenv.config({ path: '../.env' });
-import { RoleName, User } from '../entity/User';
+import { User } from '../entity/User';
 import * as bcrypt from 'bcrypt';
 import { jsonWeb } from '../utils/jwt';
 import { AppDataSource } from '../config/database';
 import { generateCode } from '../utils/generatorID';
-import { In, LessThan, MoreThan } from 'typeorm';
+import { LessThan, MoreThan } from 'typeorm';
 import { EmailVerificationService } from '../utils/nodemailer';
 import { Tenant } from '../entity/Tenant';
 import { v4 as uuidv4 } from 'uuid';
@@ -21,38 +21,28 @@ export class AuthService {
 
   static async login(req: Request): Promise<apiResponse> {
     try {
-      const { email, password, type } = req.body;
-      const roleName = (() => {
-        switch (type?.toLowerCase()) {
-          case 'user':
-            return [RoleName.USER, RoleName.STAFF, RoleName.ADMIN];
-          case 'admin':
-            return [RoleName.STAFF, RoleName.ADMIN];
-          case 'superadmin':
-            return [RoleName.SUPER_ADMIN];
-          default:
-            return [RoleName.USER, RoleName.STAFF, RoleName.ADMIN];
-        }
-      })();
+      const { email, password } = req.body;
+      // const roleName = (() => {
+      //   switch (type?.toLowerCase()) {
+      //     case 'user':
+      //       return [RoleName.OWNER, RoleName.STAFF, RoleName.ADMIN];
+      //     case 'admin':
+      //       return [RoleName.STAFF, RoleName.ADMIN];
+      //     case 'owner':
+      //       return [RoleName.OWNER];
+      //     default:
+      //       return [RoleName.OWNER, RoleName.STAFF, RoleName.ADMIN];
+      //   }
+      // })();
       const existingUser = await this.userRepo.findOne({
-        where: { email, roleName: In(roleName) },
-        relations: [
-          'role',
-          'tenantId',
-          'company',
-          'department',
-          'groups',
-          'manager',
-        ],
+        where: { email },
+        relations: ['tenantId'],
       });
       if (!existingUser || !email) {
         return { status: 404, message: 'User not found!' };
       }
       if (existingUser?.isDeleted) {
         return { status: 404, message: 'This user has been removed!' };
-      }
-      if (existingUser?.isActive === false && !existingUser?.isFirstLogin) {
-        return { status: 400, message: 'This user is not active' };
       }
       if (existingUser?.isActive === false) {
         return { status: 400, message: 'This user has been deactivated' };
@@ -61,13 +51,6 @@ export class AuthService {
         existingUser &&
         (await bcrypt.compare(password, existingUser.password))
       ) {
-        if (existingUser.isFirstLogin) {
-          return {
-            status: 403,
-            message: 'First login. Please change password.',
-            data: { redirectTo: '/change-password' },
-          };
-        }
         existingUser.lastLogin = new Date();
         await this.userRepo.save(existingUser);
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
