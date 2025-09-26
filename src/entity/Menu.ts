@@ -16,6 +16,7 @@ import {
 } from 'class-validator';
 import { Restaurant } from './Restaurant';
 import { User } from './User';
+import { Tenant } from './Tenant';
 
 export enum MenuStatus {
   ACTIVE = 'Active',
@@ -107,6 +108,10 @@ export class Menu {
 
   @DeleteDateColumn()
   deletedAt?: Date;
+
+  @ManyToOne(() => Tenant)
+  @JoinColumn({ name: 'tenantId' })
+  tenantId!: Tenant;
 
   @ManyToOne(() => User)
   @JoinColumn({ name: 'deletedBy' })

@@ -1,87 +1,73 @@
 import { Request, Response } from 'express';
-import { RestaurantService } from '../services/restaurants.service';
+import { MenuService } from '../services/menu.service';
 import { apiResponse } from '../types/res';
 
-export async function createRestaurant(
+export async function createMenu(
   req: Request,
   res: Response,
 ): Promise<apiResponse> {
   try {
-    const { status, ...data } = await RestaurantService.createRestaurant(req);
+    const { status, ...data } = await MenuService.createMenu(req);
     return res.status(status).send(data);
   } catch (error: any) {
     return res.status(500).send({ error: error.message });
   }
 }
 
-export async function createRestaurantBranch(
+export async function getMenu(
   req: Request,
   res: Response,
 ): Promise<apiResponse> {
   try {
-    const { status, ...data } =
-      await RestaurantService.createRestaurantBranch(req);
+    const { status, ...data } = await MenuService.getMenu(req);
     return res.status(status).send(data);
   } catch (error: any) {
     return res.status(500).send({ error: error.message });
   }
 }
 
-export async function getRestaurant(
+export async function getAllMenus(
   req: Request,
   res: Response,
 ): Promise<apiResponse> {
   try {
-    const { status, ...data } = await RestaurantService.getRestaurant(req);
+    const { status, ...data } = await MenuService.getAllMenus(req);
     return res.status(status).send(data);
   } catch (error: any) {
     return res.status(500).send({ error: error.message });
   }
 }
 
-export async function getAllRestaurants(
+export async function getMenusByRestaurant(
   req: Request,
   res: Response,
 ): Promise<apiResponse> {
   try {
-    const { status, ...data } = await RestaurantService.getAllRestaurants(req);
+    const { status, ...data } = await MenuService.getMenusByRestaurant(req);
     return res.status(status).send(data);
   } catch (error: any) {
     return res.status(500).send({ error: error.message });
   }
 }
 
-export async function getRestaurantBranches(
+export async function updateMenu(
   req: Request,
   res: Response,
 ): Promise<apiResponse> {
   try {
-    const { status, ...data } =
-      await RestaurantService.getRestaurantBranches(req);
+    const { status, ...data } = await MenuService.updateMenu(req);
     return res.status(status).send(data);
   } catch (error: any) {
     return res.status(500).send({ error: error.message });
   }
 }
 
-export async function updateRestaurant(
+export async function deleteMenu(
   req: Request,
   res: Response,
 ): Promise<apiResponse> {
   try {
-    const { status, ...data } = await RestaurantService.updateRestaurant(req);
-    return res.status(status).send(data);
-  } catch (error: any) {
-    return res.status(500).send({ error: error.message });
-  }
-}
-
-export async function deleteRestaurant(
-  req: Request,
-  res: Response,
-): Promise<apiResponse> {
-  try {
-    const { status, ...data } = await RestaurantService.deleteRestaurant(req);
+    const { status, ...data } = await MenuService.deleteMenu(req);
     return res.status(status).send(data);
   } catch (error: any) {
     return res.status(500).send({ error: error.message });

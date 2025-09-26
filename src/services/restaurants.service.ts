@@ -41,7 +41,6 @@ export class RestaurantService {
         return { status: 400, message: 'Restaurant already exists!' };
       }
 
-      // Create parent/standalone restaurant (isBranch = false, parentRestaurantId = null)
       let restaurant = this.restaurantRepo.create({
         address,
         description,
