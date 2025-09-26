@@ -1,0 +1,72 @@
+# name: Deploy to EC2
+
+# on:
+#   push:
+#     branches:
+#       - dev
+#       - stage
+#       - master
+
+# jobs:
+#   deploy:
+#     runs-on: ubuntu-latest
+
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v3
+
+#       - name: Setup SSH agent
+#         uses: webfactory/ssh-agent@v0.7.0
+#         with:
+#           ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
+
+#       - name: Deploy to EC2 based on branch
+#         env:
+#           GH_TOKEN: ${{ secrets.GH_TOKEN }}
+#           EC2_HOST: ${{ secrets.EC2_HOST }}
+#           EC2_HOST_STAGE: ${{ secrets.EC2_HOST_STAGE }}
+#           EC2_HOST_MASTER: ${{ secrets.EC2_HOST_MASTER }}
+
+#         run: |
+#           if [ "${{ github.ref }}" == "refs/heads/dev" ]; then
+#             echo "Deploying to dev environment"
+#             ssh -o StrictHostKeyChecking=no ubuntu@$EC2_HOST << EOF
+#               cd /repos/nerdy-backend
+#               git config --global credential.helper cache
+#               git config --global credential.https://github.com.username ${{ github.actor }}
+#               git config --global credential.https://github.com.helper "!f() { echo username=${{ github.actor }}; echo password=${GH_TOKEN}; }; f"
+#               git pull origin dev
+#               docker system prune -f
+#               docker volume prune -f
+#               docker-compose --profile dev down
+#               docker-compose --profile dev up --build -d
+#           EOF
+#           elif [ "${{ github.ref }}" == "refs/heads/stage" ]; then
+#             echo "Deploying to staging environment"
+#             ssh -o StrictHostKeyChecking=no ubuntu@$EC2_HOST_STAGE << EOF
+#               cd /repos/nerdy-backend
+#               git config --global credential.helper cache
+#               git config --global credential.https://github.com.username ${{ github.actor }}
+#               git config --global credential.https://github.com.helper "!f() { echo username=${{ github.actor }}; echo password=${GH_TOKEN}; }; f"
+#               git pull origin stage
+#               docker system prune -f
+#               docker volume prune -f
+#               docker compose --profile stage down
+#               docker compose --profile stage up --build -d
+#           EOF
+#           elif [ "${{ github.ref }}" == "refs/heads/master" ]; then
+#             echo "Deploying to master environment"
+#             ssh -o StrictHostKeyChecking=no ubuntu@$EC2_HOST_MASTER << EOF
+#               cd /repos/nerdy-backend
+#               git config --global credential.helper cache
+#               git config --global credential.https://github.com.username ${{ github.actor }}
+#               git config --global credential.https://github.com.helper "!f() { echo username=${{ github.actor }}; echo password=${GH_TOKEN}; }; f"
+#               git pull origin master
+#               docker system prune -f
+#               docker volume prune -f
+#               docker compose --profile stage down
+#               docker compose --profile stage up --build -d
+#           EOF
+#           else
+#             echo "Not a deployable branch"
+#           fi

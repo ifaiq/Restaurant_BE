@@ -1,1 +1,41 @@
-node_modules
+# Node.js
+portal/node_modules/
+node_modules/
+portal/dist/
+dist/
+portal/.env
+LMS/node_modules/
+LMS/dist/
+LMS/.env
+.env
+.stage.env
+.prod.env
+portal/uploads/
+prometheus.yml
+serviceAccountKey.json
+# Python (FastAPI)
+LLM/venv/
+LLM/.env
+LLM/.venv/
+__pycache__/
+LLM/src/chromadb_db/
+LLM/src/chromadb/
+LLM/src/data/
+LLM/Embeddings/embeddings
+LLM/Embeddings/uploads
+LLM/Embeddings/venv
+LLM/Embeddings/__pycache__
+LLM/Indexing/cache
+LLM/Indexing/venv
+LLM/Indexing/__pycache__
+LLM/uploads/
+
+# Docker
+*.log
+docker-compose.override.yml
+
+# IDE files
+.idea/
+
+# Neo Plugins
+neo4j_db/
