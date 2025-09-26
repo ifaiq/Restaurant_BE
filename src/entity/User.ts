@@ -9,7 +9,6 @@ import {
   BeforeInsert,
   BeforeUpdate,
 } from 'typeorm';
-import { Role } from './Role';
 import { Tenant } from './Tenant';
 import {
   IsString,
@@ -98,12 +97,12 @@ export class User {
   })
   roleName?: RoleName;
 
-  @ManyToOne(() => Role, (role) => role.users, {
-    nullable: true,
-    onDelete: 'CASCADE',
-  })
-  @IsOptional()
-  role?: Role;
+  // @ManyToOne(() => Role, (role) => role.users, {
+  //   nullable: true,
+  //   onDelete: 'CASCADE',
+  // })
+  // @IsOptional()
+  // role?: Role;
 
   @Column({ default: false })
   @IsBoolean()

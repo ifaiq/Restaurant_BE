@@ -10,11 +10,11 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 dotenv.config({ path: '../.env' });
 import { initializeMongoLogger, logger } from './utils/logger';
-import { EmailQueueExecutor } from './queues/executor/emailQueue.executor';
-import { setupGracefulShutdown } from './queues/consumer';
+// import { EmailQueueExecutor } from './queues/executor/emailQueue.executor';
+// import { setupGracefulShutdown } from './queues/consumer';
 
-const emailWorker = new EmailQueueExecutor();
-setupGracefulShutdown([emailWorker]);
+// const emailWorker = new EmailQueueExecutor();
+// setupGracefulShutdown([emailWorker]);
 connectDB();
 initializeMongoLogger();
 const app = express();

@@ -1,7 +1,5 @@
 import { DataSource } from 'typeorm';
 import { User } from '../entity/User';
-import { Role } from '../entity/Role';
-import { DocumentType } from '../entity/DocumentType';
 import dotenv from 'dotenv';
 dotenv.config({ path: '../.env' });
 import { logger } from '../utils/logger';
@@ -14,7 +12,7 @@ export const AppDataSource = new DataSource({
   username: process.env.POSTGRES_USER,
   password: process.env.POSTGRES_PASSWORD,
   database: process.env.POSTGRES_NAME,
-  entities: [User, Role, DocumentType, Document, Tenant],
+  entities: [User, Tenant],
   synchronize: true,
 });
 

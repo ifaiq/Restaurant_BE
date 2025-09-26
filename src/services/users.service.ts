@@ -5,16 +5,14 @@ dotenv.config({ path: '../.env' });
 import { RoleName, User } from '../entity/User';
 import * as bcrypt from 'bcrypt';
 import { AppDataSource } from '../config/database';
-import { Between, ILike, In, IsNull, Not } from 'typeorm';
-import { Role } from '../entity/Role';
-import { loginInfoEmailTemplate } from '../helper/mailTemplate';
+import { Between, ILike, In } from 'typeorm';
+//import { loginInfoEmailTemplate } from '../helper/mailTemplate';
 import { MongoClient } from 'mongodb';
-import { EmailQueueProducer } from '../queues/producer/emailQueue.producer';
+// import { EmailQueueProducer } from '../queues/producer/emailQueue.producer';
 
 export class UserService {
   private static userRepo = AppDataSource.getRepository(User);
-  private static roleRepo = AppDataSource.getRepository(Role);
-  private static emailQueueProducer = new EmailQueueProducer();
+  // private static emailQueueProducer = new EmailQueueProducer();
   static async createUser(req: Request | any): Promise<apiResponse> {
     try {
       const tenantId = req?.tenantId;
@@ -27,21 +25,13 @@ export class UserService {
         country,
         employeeId,
         roleName,
-        role,
       } = req.body;
       const existingUser = await this.userRepo.findOneBy({ email, tenantId });
       if (existingUser) {
         return { status: 404, message: 'User with this email already exists!' };
       }
-      let roleData, managerData;
-      if (role) {
-        roleData = await this.roleRepo.findOne({
-          where: { id: Number(role) },
-        });
-        if (!roleData) {
-          return { status: 400, message: 'Role not found!' };
-        }
-      }
+      let managerData;
+
       if (manager) {
         managerData = await this.userRepo.findOne({
           where: { id: Number(manager) },
@@ -64,19 +54,18 @@ export class UserService {
       newUser.employeeId = employeeId;
       newUser.isActive = true;
       newUser.roleName = roleName === 'STAFF' ? roleName : newUser.roleName;
-      newUser.role = roleData ?? undefined;
       newUser.tenantId = tenantId;
       const user = await this.userRepo.save(newUser);
       if (!user) {
         return { status: 400, message: 'Unable to create user' };
       }
-      const passwordField = loginInfoEmailTemplate(password);
-      await this.emailQueueProducer.addEmailJob(
-        email,
-        passwordField,
-        {},
-        'Login Details',
-      );
+      //const passwordField = loginInfoEmailTemplate(password);
+      // await this.emailQueueProducer.addEmailJob(
+      //   email,
+      //   passwordField,
+      //   {},
+      //   'Login Details',
+      // );
       return { status: 200, message: 'User created successfully!', data: user };
     } catch (error: any) {
       return { status: 500, error: error.message };
@@ -96,7 +85,6 @@ export class UserService {
           },
         },
         relations: {
-          role: true,
           manager: true,
         },
       });
@@ -122,7 +110,6 @@ export class UserService {
           },
         },
         relations: {
-          role: true,
           manager: true,
         },
       });
@@ -170,7 +157,6 @@ export class UserService {
         doj,
         manager,
         position,
-        role,
         employeeId,
         name,
         isDocViewable,
@@ -183,20 +169,11 @@ export class UserService {
           },
           isDeleted: false,
         },
-        relations: ['role'],
       });
       if (!userData) {
         return { status: 400, message: 'User not found!' };
       }
-      let roleData;
-      if (role) {
-        roleData = await this.roleRepo.findOne({
-          where: { id: Number(role) },
-        });
-        if (!roleData) {
-          return { status: 400, message: 'Role not found!' };
-        }
-      }
+
       let managerData;
       if (manager) {
         managerData = await this.userRepo.findOne({
@@ -214,8 +191,6 @@ export class UserService {
       userData.isDocViewable = isDocViewable ?? userData.isDocViewable;
       userData.manager = managerData ?? userData.manager;
       userData.employeeId = employeeId ?? userData.employeeId;
-      userData.role = roleData ?? userData?.role;
-      userData.roleName = role ? RoleName.STAFF : userData.roleName;
       userData = await this.userRepo.save(userData);
 
       return {
@@ -530,7 +505,6 @@ export class UserService {
           tenantId: {
             id: tenantId,
           },
-          role: Not(IsNull()),
         },
         take: limit,
         skip: (page - 1) * limit,
