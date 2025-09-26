@@ -5,6 +5,7 @@ import {
   ManyToOne,
   JoinColumn,
   DeleteDateColumn,
+  OneToMany,
 } from 'typeorm';
 import {
   IsBoolean,
@@ -16,6 +17,7 @@ import {
 } from 'class-validator';
 import { Restaurant } from './Restaurant';
 import { User } from './User';
+import { MenuModifier } from './MenuModifier';
 import { Tenant } from './Tenant';
 
 export enum MenuStatus {
@@ -127,4 +129,8 @@ export class Menu {
   @JoinColumn({ name: 'updatedBy' })
   @IsOptional()
   updatedBy?: User;
+
+  @OneToMany(() => MenuModifier, (modifier) => modifier.menu)
+  @IsOptional()
+  modifiers?: MenuModifier[];
 }
