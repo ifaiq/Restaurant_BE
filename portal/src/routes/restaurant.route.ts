@@ -9,24 +9,18 @@ import {
   deleteRestaurant,
 } from '../controllers/restaurant.controller';
 import { verifyToken, verifyTokenAndAdmin } from '../middlewares/verification';
-import { permissions } from '../middlewares/permission';
 
 const router = Router();
 
 // Create parent/standalone restaurant
-router.post('/create', verifyTokenAndAdmin, permissions, async (req, res) => {
+router.post('/create', verifyTokenAndAdmin, async (req, res) => {
   await createRestaurant(req, res);
 });
 
 // Create restaurant branch
-router.post(
-  '/create-branch',
-  verifyTokenAndAdmin,
-  permissions,
-  async (req, res) => {
-    await createRestaurantBranch(req, res);
-  },
-);
+router.post('/create-branch', verifyTokenAndAdmin, async (req, res) => {
+  await createRestaurantBranch(req, res);
+});
 
 // Get single restaurant
 router.get('/:id', verifyToken, async (req, res) => {
@@ -44,12 +38,12 @@ router.get('/:parentId/branches', verifyToken, async (req, res) => {
 });
 
 // Update restaurant
-router.put('/:id', verifyTokenAndAdmin, permissions, async (req, res) => {
+router.put('/:id', verifyTokenAndAdmin, async (req, res) => {
   await updateRestaurant(req, res);
 });
 
 // Delete restaurant
-router.delete('/:id', verifyTokenAndAdmin, permissions, async (req, res) => {
+router.delete('/:id', verifyTokenAndAdmin, async (req, res) => {
   await deleteRestaurant(req, res);
 });
 

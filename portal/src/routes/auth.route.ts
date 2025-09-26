@@ -10,7 +10,6 @@ import {
   passwordResetByToken,
 } from '../controllers/auth.controller';
 import { verifyToken, verifyTokenAndAdmin } from '../middlewares/verification';
-import { permissions } from '../middlewares/permission';
 import rateLimit from 'express-rate-limit';
 
 const sensitiveAuthLimiter = rateLimit({
@@ -22,7 +21,7 @@ const sensitiveAuthLimiter = rateLimit({
 });
 const router = Router();
 
-router.post('/register', verifyTokenAndAdmin, permissions, async (req, res) => {
+router.post('/register', verifyTokenAndAdmin, async (req, res) => {
   await register(req, res);
 });
 
