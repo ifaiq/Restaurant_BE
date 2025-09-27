@@ -64,27 +64,9 @@ export class User {
   @IsOptional()
   restaurantId?: Restaurant;
 
-  @ManyToOne(() => User, { nullable: true })
-  @JoinColumn({ name: 'manager' })
-  @IsOptional()
-  manager?: User;
-
   @ManyToOne(() => Tenant)
   @JoinColumn({ name: 'tenantId' })
   tenantId!: Tenant;
-
-  @Column({ default: true })
-  isFirstLogin!: boolean;
-
-  @Column({ nullable: true, unique: true })
-  @IsOptional()
-  @IsString()
-  employeeId?: string;
-
-  @Column({ type: 'timestamp', nullable: true })
-  @IsOptional()
-  @IsDate()
-  doj?: Date | null;
 
   @Column({ type: 'timestamp', nullable: true })
   @IsOptional()
@@ -102,11 +84,7 @@ export class User {
   @IsBoolean()
   isAdmin?: boolean;
 
-  @Column({ default: false })
-  @IsBoolean()
-  isDocViewable?: boolean;
-
-  @Column({ default: false })
+  @Column({ default: true })
   @IsBoolean()
   isActive?: boolean;
 

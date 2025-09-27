@@ -6,13 +6,18 @@ import { Restaurant } from '../entity/Restaurant';
 import { AppDataSource } from '../config/database';
 import { User } from '../entity/User';
 import { ILike } from 'typeorm';
+import { AuthService } from './auth.service';
 export class RestaurantService {
   private static restaurantRepo = AppDataSource.getRepository(Restaurant);
   private static userRepo = AppDataSource.getRepository(User);
 
   static async createRestaurant(req: Request | any): Promise<apiResponse> {
     try {
-      const tenantId = req?.tenantId;
+      const tenantResult = await AuthService.genTenantId();
+      if (tenantResult.status !== 200) {
+        return { status: 500, message: 'Failed to create tenant' };
+      }
+      const tenantId = tenantResult.data?.id;
       const {
         address,
         description,
@@ -34,7 +39,7 @@ export class RestaurantService {
       // Check if restaurant already exists
       const existingRestaurant = await this.restaurantRepo.findOneBy({
         restaurantName,
-        tenantId,
+        tenantId: { id: tenantId },
       });
 
       if (existingRestaurant) {
@@ -58,7 +63,7 @@ export class RestaurantService {
         state,
         country,
         postalCode,
-        tenantId,
+        tenantId: { id: tenantId },
       });
 
       restaurant = await this.restaurantRepo.save(restaurant);
@@ -80,7 +85,6 @@ export class RestaurantService {
     req: Request | any,
   ): Promise<apiResponse> {
     try {
-      const tenantId = req?.tenantId;
       const {
         address,
         description,
@@ -109,7 +113,6 @@ export class RestaurantService {
 
       const parentRestaurant = await this.restaurantRepo.findOneBy({
         id: parentRestaurantId,
-        tenantId,
         isBranch: false,
       });
 
@@ -122,7 +125,7 @@ export class RestaurantService {
 
       const existingBranch = await this.restaurantRepo.findOneBy({
         restaurantName,
-        tenantId,
+        tenantId: parentRestaurant.tenantId,
         parentRestaurantId,
       });
 
@@ -153,7 +156,7 @@ export class RestaurantService {
         state,
         country,
         postalCode,
-        tenantId,
+        tenantId: parentRestaurant.tenantId,
       });
 
       branchRestaurant = await this.restaurantRepo.save(branchRestaurant);
@@ -198,7 +201,6 @@ export class RestaurantService {
         tenantId: {
           id: tenantId,
         },
-        isBranch: false, // Only return parent/standalone restaurants
       };
 
       if (search) {

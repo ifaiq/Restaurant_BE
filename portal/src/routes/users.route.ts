@@ -10,7 +10,6 @@ import {
   getAdminAnalytics,
   getUserProfile,
   getUserUsageAnalytics,
-  updateAllUsersDocViewable,
 } from '../controllers/users.controller';
 import { verifyToken, verifyTokenAndAdmin } from '../middlewares/verification';
 
@@ -50,10 +49,6 @@ router.get('/user/:id', verifyTokenAndAdmin, async (req, res) => {
   await getUserById(req, res);
 });
 
-router.put('/docsView', verifyTokenAndAdmin, async (req, res) => {
-  await updateAllUsersDocViewable(req, res);
-});
-
 router.get('/profile', verifyToken, async (req, res) => {
   await getUserProfile(req, res);
 });
@@ -76,7 +71,7 @@ router.put(
 //   },
 // );
 
-router.post('/addUser', verifyTokenAndAdmin, async (req, res) => {
+router.post('/createUser', verifyTokenAndAdmin, async (req, res) => {
   await createUser(req, res);
 });
 router.delete(

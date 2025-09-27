@@ -86,19 +86,6 @@ export async function updateUser(
   }
 }
 
-export async function updateAllUsersDocViewable(
-  req: Request,
-  res: Response,
-): Promise<apiResponse> {
-  try {
-    const { status, ...data } =
-      await UserService.updateAllUsersDocViewable(req);
-    return res.status(status).send(data);
-  } catch (error: any) {
-    return res.status(500).send({ error: error.message });
-  }
-}
-
 export async function getUserAnalytics(
   req: Request,
   res: Response,

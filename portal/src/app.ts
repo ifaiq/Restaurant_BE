@@ -4,6 +4,7 @@ import morgan from 'morgan';
 import authRouter from './routes/auth.route';
 import userRouter from './routes/users.route';
 import uploadRouter from './routes/uploadFile.route';
+import restaurantRouter from './routes/restaurant.route';
 import helmet from 'helmet';
 
 import cors from 'cors';
@@ -82,6 +83,7 @@ app.use(express.json());
 app.use(morgan('dev'));
 
 app.use('/api/auth', authRouter);
+app.use('/api/restaurant', restaurantRouter);
 app.use('/api/users', userRouter);
 app.use('/api/upload', uploadRouter);
 app.get('/', (req: Request, res: Response) => {

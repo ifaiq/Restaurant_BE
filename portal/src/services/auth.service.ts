@@ -2,7 +2,7 @@ import { Request } from 'express';
 import { apiResponse } from '../types/res';
 import dotenv from 'dotenv';
 dotenv.config({ path: '../.env' });
-import { User } from '../entity/User';
+import { RoleName, User } from '../entity/User';
 import * as bcrypt from 'bcrypt';
 import { jsonWeb } from '../utils/jwt';
 import { AppDataSource } from '../config/database';
@@ -46,6 +46,13 @@ export class AuthService {
       }
       if (existingUser?.isActive === false) {
         return { status: 400, message: 'This user has been deactivated' };
+      }
+      if (
+        !existingUser?.tenantId &&
+        existingUser?.roleName !== RoleName.ADMIN &&
+        existingUser?.isAdmin === false
+      ) {
+        return { status: 400, message: 'You are not authorized to login' };
       }
       if (
         existingUser &&
@@ -208,7 +215,6 @@ export class AuthService {
 
       user.password = hashedPassword;
       user.uniqueID = '';
-      user.isFirstLogin = false;
       user.isActive = true;
 
       await this.userRepo.save(user);
@@ -242,7 +248,6 @@ export class AuthService {
 
       user.password = hashedPassword;
       user.uniqueID = '';
-      user.isFirstLogin = false;
       user.isActive = true;
 
       await this.userRepo.save(user);
@@ -283,7 +288,6 @@ export class AuthService {
 
       user.password = hashedPassword;
       user.uniqueID = '';
-      user.isFirstLogin = false;
       user.isActive = true;
 
       await this.userRepo.save(user);

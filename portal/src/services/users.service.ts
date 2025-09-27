@@ -15,37 +15,42 @@ export class UserService {
   // private static emailQueueProducer = new EmailQueueProducer();
   static async createUser(req: Request | any): Promise<apiResponse> {
     try {
-      const tenantId = req?.tenantId;
-      const { email, name, doj, manager, country, employeeId, roleName } =
+      const { email, name, country, roleName, restaurantId, password } =
         req.body;
+
+      let tenantId;
+      if (restaurantId) {
+        const restaurant = await AppDataSource.getRepository(
+          'Restaurant',
+        ).findOne({
+          where: { id: restaurantId },
+          relations: ['tenantId'],
+        });
+
+        if (!restaurant) {
+          return { status: 400, message: 'Restaurant not found!' };
+        }
+
+        tenantId = restaurant.tenantId;
+      } else {
+        return { status: 400, message: 'Restaurant ID is required!' };
+      }
+
       const existingUser = await this.userRepo.findOneBy({ email, tenantId });
       if (existingUser) {
         return { status: 404, message: 'User with this email already exists!' };
       }
-      let managerData;
 
-      if (manager) {
-        managerData = await this.userRepo.findOne({
-          where: { id: Number(manager) },
-        });
-        if (!managerData) {
-          return { status: 400, message: 'Manager not found!' };
-        }
-      }
-
-      const password = 'Password123!';
       const hashedPassword = await bcrypt.hash(password, 10);
       const newUser = new User();
       newUser.email = email;
       newUser.password = hashedPassword;
       newUser.name = name;
-      newUser.doj = doj;
-      newUser.manager = manager ? manager : null;
       newUser.country = country;
-      newUser.employeeId = employeeId;
       newUser.isActive = true;
-      newUser.roleName = roleName === 'STAFF' ? roleName : newUser.roleName;
+      newUser.roleName = roleName;
       newUser.tenantId = tenantId;
+      newUser.restaurantId = restaurantId;
       const user = await this.userRepo.save(newUser);
       if (!user) {
         return { status: 400, message: 'Unable to create user' };
@@ -75,9 +80,6 @@ export class UserService {
             id: tenantId,
           },
         },
-        relations: {
-          manager: true,
-        },
       });
       if (!userData) {
         return { status: 400, message: 'User not found!' };
@@ -99,9 +101,6 @@ export class UserService {
           tenantId: {
             id: tenantId,
           },
-        },
-        relations: {
-          manager: true,
         },
       });
       if (!userData) {
@@ -129,7 +128,6 @@ export class UserService {
       }
       userData.isDeleted = true;
       userData.isActive = false;
-      userData.isFirstLogin = true;
       await this.userRepo.save(userData);
 
       return { status: 200, message: 'User deleted successfully!' };
@@ -143,8 +141,7 @@ export class UserService {
       const { id } = req.params;
       const tenantId = req?.tenantId;
 
-      const { country, doj, manager, employeeId, name, isDocViewable } =
-        req.body;
+      const { country, name } = req.body;
       let userData = await this.userRepo.findOne({
         where: {
           id: Number(id),
@@ -158,59 +155,14 @@ export class UserService {
         return { status: 400, message: 'User not found!' };
       }
 
-      let managerData;
-      if (manager) {
-        managerData = await this.userRepo.findOne({
-          where: { id: Number(manager) },
-        });
-        if (!managerData) {
-          return { status: 400, message: 'Manager not found!' };
-        }
-      }
-
       userData.name = name ?? userData.name;
       userData.country = country ?? userData.country;
-      userData.doj = doj ?? userData.doj;
-      userData.isDocViewable = isDocViewable ?? userData.isDocViewable;
-      userData.manager = managerData ?? userData.manager;
-      userData.employeeId = employeeId ?? userData.employeeId;
       userData = await this.userRepo.save(userData);
 
       return {
         status: 200,
         message: 'User updated successfully!',
         data: userData,
-      };
-    } catch (error: any) {
-      return { status: 500, error: error.message };
-    }
-  }
-
-  static async updateAllUsersDocViewable(
-    req: Request | any,
-  ): Promise<apiResponse> {
-    try {
-      const tenantId = req?.tenantId;
-      const { isDocViewable } = req.body;
-
-      if (typeof isDocViewable !== 'boolean') {
-        return {
-          status: 400,
-          message: '`isDocViewable` must be a boolean value',
-        };
-      }
-
-      const result = await this.userRepo
-        .createQueryBuilder()
-        .update()
-        .set({ isDocViewable })
-        .where('tenantId = :tenantId', { tenantId })
-        .andWhere('isDeleted = false')
-        .execute();
-
-      return {
-        status: 200,
-        message: `Updated isDocViewable to ${isDocViewable} for ${result.affected} users.`,
       };
     } catch (error: any) {
       return { status: 500, error: error.message };
@@ -316,7 +268,7 @@ export class UserService {
       const totalUsers = await this.userRepo.count({ where: baseCondition });
 
       const activeUsers = await this.userRepo.count({
-        where: { ...baseCondition, isActive: true, isFirstLogin: false },
+        where: { ...baseCondition, isActive: true },
       });
 
       const inactiveUsers = await this.userRepo.count({
@@ -324,7 +276,7 @@ export class UserService {
       });
 
       const pendingUsers = await this.userRepo.count({
-        where: { ...baseCondition, isActive: true, isFirstLogin: true },
+        where: { ...baseCondition, isActive: true },
       });
 
       const now = new Date();
@@ -453,7 +405,7 @@ export class UserService {
       const totalUsers = await this.userRepo.count({ where: baseCondition });
 
       const activeUsers = await this.userRepo.count({
-        where: { ...baseCondition, isActive: true, isFirstLogin: false },
+        where: { ...baseCondition, isActive: true },
       });
 
       const inactiveUsers = await this.userRepo.count({
@@ -461,7 +413,7 @@ export class UserService {
       });
 
       const pendingUsers = await this.userRepo.count({
-        where: { ...baseCondition, isActive: true, isFirstLogin: true },
+        where: { ...baseCondition, isActive: true },
       });
 
       return {
