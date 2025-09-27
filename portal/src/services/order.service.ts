@@ -2,7 +2,7 @@ import { Request } from 'express';
 import { apiResponse } from '../types/res';
 import dotenv from 'dotenv';
 dotenv.config({ path: '../.env' });
-import { Order, OrderStatus, OrderType, PaymentStatus } from '../entity/Order';
+import { Order, OrderStatus, PaymentStatus } from '../entity/Order';
 import { AppDataSource } from '../config/database';
 import { User } from '../entity/User';
 import { ILike, Between } from 'typeorm';
@@ -26,13 +26,8 @@ export class OrderService {
       const {
         restaurantId,
         tableId,
-        waiterId,
-        orderType,
         items,
-        customerInfo,
         specialInstructions,
-        kitchenNotes,
-        estimatedReadyTime,
         paymentMethod,
       } = req.body;
 
@@ -68,22 +63,6 @@ export class OrderService {
         }
       }
 
-      // Verify waiter exists if provided
-      let waiter = null;
-      if (waiterId) {
-        waiter = await this.userRepo.findOneBy({
-          id: waiterId,
-          tenantId,
-        });
-
-        if (!waiter) {
-          return {
-            status: 400,
-            message: 'Waiter not found or does not belong to tenant!',
-          };
-        }
-      }
-
       // Calculate totals
       let subtotal = 0;
       items.forEach((item: any) => {
@@ -97,30 +76,23 @@ export class OrderService {
         subtotal += itemTotal;
       });
 
-      const taxRate = 0.08; // 8% tax rate - should be configurable
-      const taxAmount = subtotal * taxRate;
-      const totalAmount = subtotal + taxAmount;
+      // const taxRate = 0.08; // 8% tax rate - should be configurable
+      // const taxAmount = subtotal * taxRate;
+      const totalAmount = subtotal;
 
       const orderNumber = this.generateOrderNumber();
 
       let order = this.orderRepo.create({
         orderNumber,
         restaurant: { id: restaurantId },
-        table: tableId ? { id: tableId } : null,
-        waiter: waiterId ? { id: waiterId } : null,
-        orderType: orderType || OrderType.DINE_IN,
+        table: tableId ? { id: tableId } : undefined,
         status: OrderStatus.PENDING,
         paymentStatus: PaymentStatus.PENDING,
         paymentMethod,
         subtotal,
-        taxAmount,
         totalAmount,
         items,
         specialInstructions,
-        kitchenNotes,
-        estimatedReadyTime: estimatedReadyTime
-          ? new Date(estimatedReadyTime)
-          : null,
         tenantId,
       });
 
@@ -181,7 +153,6 @@ export class OrderService {
       const search = req.query.search as string;
       const restaurantId = req.query.restaurantId as string;
       const status = req.query.status as string;
-      const orderType = req.query.orderType as string;
       const paymentStatus = req.query.paymentStatus as string;
       const startDate = req.query.startDate as string;
       const endDate = req.query.endDate as string;
@@ -202,10 +173,6 @@ export class OrderService {
 
       if (status) {
         whereCondition.status = status;
-      }
-
-      if (orderType) {
-        whereCondition.orderType = orderType;
       }
 
       if (paymentStatus) {
@@ -342,13 +309,8 @@ export class OrderService {
     try {
       const { id } = req.params;
       const {
-        waiterId,
-        orderType,
         items,
-        customerInfo,
         specialInstructions,
-        kitchenNotes,
-        estimatedReadyTime,
         paymentMethod,
         tipAmount,
         discountAmount,
@@ -388,17 +350,9 @@ export class OrderService {
         order.totalAmount = totalAmount;
         order.items = items;
       }
-
-      order.waiter = waiterId ? { id: waiterId } : order.waiter;
-      order.orderType = orderType ? orderType : order.orderType;
-      order.customerInfo = customerInfo ? customerInfo : order.customerInfo;
       order.specialInstructions = specialInstructions
         ? specialInstructions
         : order.specialInstructions;
-      order.kitchenNotes = kitchenNotes ? kitchenNotes : order.kitchenNotes;
-      order.estimatedReadyTime = estimatedReadyTime
-        ? new Date(estimatedReadyTime)
-        : order.estimatedReadyTime;
       order.paymentMethod = paymentMethod ? paymentMethod : order.paymentMethod;
       order.tipAmount = tipAmount ? tipAmount : order.tipAmount;
       order.discountAmount = discountAmount
@@ -433,20 +387,6 @@ export class OrderService {
       }
 
       order.status = status;
-
-      // Set timestamps based on status
-      const now = new Date();
-      switch (status) {
-        case OrderStatus.READY:
-          order.readyTime = now;
-          break;
-        case OrderStatus.SERVED:
-          order.servedTime = now;
-          break;
-        case OrderStatus.COMPLETED:
-          order.completedTime = now;
-          break;
-      }
 
       order = await this.orderRepo.save(order);
 

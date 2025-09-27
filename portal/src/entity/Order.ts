@@ -34,13 +34,6 @@ export enum OrderStatus {
   REFUNDED = 'REFUNDED',
 }
 
-export enum OrderType {
-  DINE_IN = 'DINE_IN',
-  TAKEAWAY = 'TAKEAWAY',
-  DELIVERY = 'DELIVERY',
-  PICKUP = 'PICKUP',
-}
-
 export enum PaymentStatus {
   PENDING = 'PENDING',
   PAID = 'PAID',
@@ -71,14 +64,6 @@ export interface OrderItem {
   specialInstructions?: string;
 }
 
-export interface CustomerInfo {
-  name?: string;
-  phone?: string;
-  email?: string;
-  address?: string;
-  notes?: string;
-}
-
 @Entity()
 export class Order {
   @PrimaryGeneratedColumn()
@@ -99,16 +84,6 @@ export class Order {
   @JoinColumn({ name: 'tableId' })
   @IsOptional()
   table?: Table;
-
-  @ManyToOne(() => User, { nullable: true })
-  @JoinColumn({ name: 'waiterId' })
-  @IsOptional()
-  waiter?: User;
-
-  @Column({ type: 'enum', enum: OrderType, default: OrderType.DINE_IN })
-  @IsOptional()
-  @IsEnum(OrderType, { message: 'Invalid order type' })
-  orderType?: OrderType;
 
   @Column({ type: 'enum', enum: OrderStatus, default: OrderStatus.PENDING })
   @IsOptional()
@@ -168,37 +143,6 @@ export class Order {
     message: 'Special instructions must not exceed 1000 characters',
   })
   specialInstructions?: string;
-
-  @Column({ nullable: true })
-  @IsOptional()
-  @IsString({ message: 'Kitchen notes must be a string' })
-  @MaxLength(500, { message: 'Kitchen notes must not exceed 500 characters' })
-  kitchenNotes?: string;
-
-  @Column({ type: 'timestamp', nullable: true })
-  @IsOptional()
-  estimatedReadyTime?: Date;
-
-  @Column({ type: 'timestamp', nullable: true })
-  @IsOptional()
-  readyTime?: Date;
-
-  @Column({ type: 'timestamp', nullable: true })
-  @IsOptional()
-  servedTime?: Date;
-
-  @Column({ type: 'timestamp', nullable: true })
-  @IsOptional()
-  completedTime?: Date;
-
-  @Column({ type: 'jsonb', nullable: true })
-  @IsOptional()
-  metadata?: Record<string, any>;
-
-  @Column({ default: true })
-  @IsOptional()
-  @IsBoolean({ message: 'isActive must be a boolean value' })
-  isActive?: boolean;
 
   @Column({ default: false })
   @IsOptional()
