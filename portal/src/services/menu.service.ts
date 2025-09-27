@@ -14,6 +14,9 @@ export class MenuService {
   static async createMenu(req: Request | any): Promise<apiResponse> {
     try {
       const tenantId = req?.tenantId;
+      if (!tenantId) {
+        return { status: 400, message: 'Tenant ID is required!' };
+      }
       const {
         menuName,
         description,
@@ -27,7 +30,6 @@ export class MenuService {
         modifiers,
       } = req.body;
 
-      // Check if menu already exists for this restaurant
       const existingMenu = await this.menuRepo.findOneBy({
         menuName,
         restaurantId: { id: restaurantId },
@@ -41,7 +43,6 @@ export class MenuService {
         };
       }
 
-      // Verify restaurant exists and belongs to tenant
       const restaurant = await AppDataSource.getRepository(
         'Restaurant',
       ).findOneBy({
@@ -153,17 +154,24 @@ export class MenuService {
       const tenantId = req?.tenantId;
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 10;
-
-      // Verify restaurant exists
       const restaurant = await AppDataSource.getRepository(
         'Restaurant',
-      ).findOneBy({
-        id: Number(restaurantId),
-        tenantId,
+      ).findOne({
+        where: {
+          id: Number(restaurantId),
+          tenantId,
+        },
+        relations: ['tenantId'],
       });
 
       if (!restaurant) {
         return { status: 400, message: 'Restaurant not found!' };
+      }
+      if (restaurant?.tenantId?.id !== tenantId) {
+        return {
+          status: 400,
+          message: 'Restaurant does not belong to tenant!',
+        };
       }
 
       const [menus, total] = await this.menuRepo.findAndCount({
@@ -261,6 +269,41 @@ export class MenuService {
       await this.menuRepo.delete({ id: Number(id) });
 
       return { status: 200, message: 'Menu deleted successfully!' };
+    } catch (error: any) {
+      return { status: 500, error: error.message };
+    }
+  }
+
+  static async getMenuWithModifiers(req: Request | any): Promise<apiResponse> {
+    try {
+      const { id } = req.params;
+      const tenantId = req?.tenantId;
+      const menu = await this.menuRepo.findOneBy({
+        id: Number(id),
+        tenantId,
+      });
+
+      if (!menu) {
+        return { status: 400, message: 'Menu not found!' };
+      }
+
+      // Process menu items to include their applicable modifiers
+      const processedMenu = {
+        ...menu,
+        menuItems: menu.menuItems?.map((item) => {
+          const applicableModifiers =
+            menu.modifiers?.filter((modifier) =>
+              item.availableModifiers?.includes(modifier.id || ''),
+            ) || [];
+
+          return {
+            ...item,
+            modifiers: applicableModifiers,
+          };
+        }),
+      };
+
+      return { status: 200, data: processedMenu };
     } catch (error: any) {
       return { status: 500, error: error.message };
     }

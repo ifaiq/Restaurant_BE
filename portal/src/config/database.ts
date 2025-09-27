@@ -6,6 +6,8 @@ import { logger } from '../utils/logger';
 import { Tenant } from '../entity/Tenant';
 import { Restaurant } from '../entity/Restaurant';
 import { Menu } from '../entity/Menu';
+import { Table } from '../entity/Table';
+import { Order } from '../entity/Order';
 
 export const AppDataSource = new DataSource({
   type: 'postgres',
@@ -14,7 +16,7 @@ export const AppDataSource = new DataSource({
   username: process.env.POSTGRES_USER,
   password: process.env.POSTGRES_PASSWORD,
   database: process.env.POSTGRES_NAME,
-  entities: [User, Tenant, Restaurant, Menu],
+  entities: [User, Tenant, Restaurant, Menu, Table, Order],
   synchronize: true,
 });
 

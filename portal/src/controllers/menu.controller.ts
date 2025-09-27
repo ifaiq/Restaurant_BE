@@ -73,3 +73,15 @@ export async function deleteMenu(
     return res.status(500).send({ error: error.message });
   }
 }
+
+export async function getMenuWithModifiers(
+  req: Request,
+  res: Response,
+): Promise<apiResponse> {
+  try {
+    const { status, ...data } = await MenuService.getMenuWithModifiers(req);
+    return res.status(status).send(data);
+  } catch (error: any) {
+    return res.status(500).send({ error: error.message });
+  }
+}

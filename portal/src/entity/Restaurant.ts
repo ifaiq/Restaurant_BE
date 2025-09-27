@@ -20,6 +20,7 @@ import {
 } from 'class-validator';
 import { Tenant } from './Tenant';
 import { User } from './User';
+import { Table } from './Table';
 
 export enum RestaurantType {
   FINE_DINING = 'Fine Dining',
@@ -166,4 +167,8 @@ export class Restaurant {
   @OneToMany(() => User, (user) => user.restaurantId)
   @IsOptional()
   users?: User[];
+
+  @OneToMany(() => Table, (table) => table.restaurant)
+  @IsOptional()
+  tables?: Table[];
 }

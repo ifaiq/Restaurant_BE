@@ -113,6 +113,7 @@ export class Menu {
     isSpicy?: boolean;
     nutritionalInfo?: Record<string, any>;
     customizations?: Record<string, any>;
+    availableModifiers?: string[]; // Array of modifier IDs that apply to this item
     isActive?: boolean;
   }>;
 

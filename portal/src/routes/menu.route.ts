@@ -6,12 +6,17 @@ import {
   getMenusByRestaurant,
   updateMenu,
   deleteMenu,
+  getMenuWithModifiers,
 } from '../controllers/menu.controller';
-import { verifyToken, verifyTokenAndAdmin } from '../middlewares/verification';
+import {
+  verifyToken,
+  verifyTokenAndAdmin,
+  verifyTokenAndOwner,
+} from '../middlewares/verification';
 
 const router = Router();
 
-router.post('/create', verifyTokenAndAdmin, async (req, res) => {
+router.post('/create', verifyTokenAndOwner, async (req, res) => {
   await createMenu(req, res);
 });
 
@@ -19,7 +24,11 @@ router.get('/:id', verifyToken, async (req, res) => {
   await getMenu(req, res);
 });
 
-router.get('/', verifyToken, async (req, res) => {
+router.get('/:id/with-modifiers', verifyToken, async (req, res) => {
+  await getMenuWithModifiers(req, res);
+});
+
+router.get('/', verifyTokenAndAdmin, async (req, res) => {
   await getAllMenus(req, res);
 });
 
