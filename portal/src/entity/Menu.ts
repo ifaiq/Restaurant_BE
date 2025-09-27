@@ -5,7 +5,6 @@ import {
   ManyToOne,
   JoinColumn,
   DeleteDateColumn,
-  OneToMany,
 } from 'typeorm';
 import {
   IsBoolean,
@@ -17,7 +16,6 @@ import {
 } from 'class-validator';
 import { Restaurant } from './Restaurant';
 import { User } from './User';
-import { MenuModifier } from './MenuModifier';
 import { Tenant } from './Tenant';
 
 export enum MenuStatus {
@@ -94,6 +92,41 @@ export class Menu {
   @IsOptional()
   categories?: Record<string, any>;
 
+  @Column({ type: 'jsonb', nullable: true })
+  @IsOptional()
+  menuItems?: Array<{
+    id?: string;
+    itemName: string;
+    description?: string;
+    price: number;
+    itemType?: string;
+    status?: string;
+    category?: string;
+    imageUrl?: string;
+    allergens?: string;
+    ingredients?: string;
+    preparationTime?: number;
+    calories?: number;
+    isVegetarian?: boolean;
+    isVegan?: boolean;
+    isGlutenFree?: boolean;
+    isSpicy?: boolean;
+    nutritionalInfo?: Record<string, any>;
+    customizations?: Record<string, any>;
+    isActive?: boolean;
+  }>;
+
+  @Column({ type: 'jsonb', nullable: true })
+  @IsOptional()
+  modifiers?: Array<{
+    id?: string;
+    name: string;
+    price?: number;
+    description?: string;
+    isActive?: boolean;
+    isRequired?: boolean;
+  }>;
+
   @Column({ default: true })
   @IsBoolean({ message: 'isActive must be a boolean value' })
   isActive?: boolean;
@@ -129,8 +162,4 @@ export class Menu {
   @JoinColumn({ name: 'updatedBy' })
   @IsOptional()
   updatedBy?: User;
-
-  @OneToMany(() => MenuModifier, (modifier) => modifier.menu)
-  @IsOptional()
-  modifiers?: MenuModifier[];
 }

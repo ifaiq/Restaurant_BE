@@ -23,6 +23,8 @@ export class MenuService {
         language,
         currency,
         categories,
+        menuItems,
+        modifiers,
       } = req.body;
 
       // Check if menu already exists for this restaurant
@@ -63,6 +65,8 @@ export class MenuService {
         language,
         currency,
         categories,
+        menuItems,
+        modifiers,
         tenantId,
       });
 
@@ -203,6 +207,8 @@ export class MenuService {
         language,
         currency,
         categories,
+        menuItems,
+        modifiers,
         isActive,
       } = req.body;
       const tenantId = req?.tenantId;
@@ -223,6 +229,8 @@ export class MenuService {
       menu.language = language ? language : menu.language;
       menu.currency = currency ? currency : menu.currency;
       menu.categories = categories ? categories : menu.categories;
+      menu.menuItems = menuItems ? menuItems : menu.menuItems;
+      menu.modifiers = modifiers ? modifiers : menu.modifiers;
       menu.isActive = isActive ? isActive : menu.isActive;
 
       menu = await this.menuRepo.save(menu);
