@@ -234,7 +234,7 @@ export class UserService {
         where: baseCondition,
         take: limit,
         skip: (page - 1) * limit,
-        relations: ['company', 'department', 'groups', 'role', 'manager'],
+        relations: ['tenantId', 'restaurantId'],
         order: {
           createdAt: 'DESC',
         },
@@ -443,7 +443,7 @@ export class UserService {
         },
         take: limit,
         skip: (page - 1) * limit,
-        relations: ['company', 'department', 'role'],
+        relations: ['tenantId', 'restaurantId'],
         order: {
           updatedAt: 'DESC',
         },

@@ -30,8 +30,8 @@ export enum RoleName {
 
 @Entity()
 export class User {
-  @PrimaryGeneratedColumn()
-  id!: number;
+  @PrimaryGeneratedColumn('uuid')
+  id!: string;
 
   @Column()
   name!: string;
@@ -80,7 +80,7 @@ export class User {
   })
   roleName?: RoleName;
 
-  @Column({ default: false })
+  @Column({ default: true })
   @IsBoolean()
   isAdmin?: boolean;
 

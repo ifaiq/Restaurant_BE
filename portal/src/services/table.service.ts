@@ -45,7 +45,6 @@ export class TableService {
       // Generate QR code data
       const qrCodeData = uuidv4();
       //const qrCodeUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/menu/${restaurantId}?table=${tableNumber}&qr=${qrCodeData}`;
-      console.log(restaurant);
       let table = this.tableRepo.create({
         tableNumber,
         seatingCapacity,

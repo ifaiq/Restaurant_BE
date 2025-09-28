@@ -33,9 +33,8 @@ export class MenuService {
       const existingMenu = await this.menuRepo.findOneBy({
         menuName,
         restaurantId: { id: restaurantId },
-        tenantId,
+        tenantId: { id: tenantId },
       });
-
       if (existingMenu) {
         return {
           status: 400,
@@ -47,7 +46,7 @@ export class MenuService {
         'Restaurant',
       ).findOneBy({
         id: restaurantId,
-        tenantId,
+        tenantId: { id: tenantId },
       });
 
       if (!restaurant) {
@@ -158,7 +157,7 @@ export class MenuService {
       ).findOne({
         where: {
           id: restaurantId,
-          tenantId,
+          tenantId: { id: tenantId },
         },
         relations: ['tenantId'],
       });
@@ -176,7 +175,7 @@ export class MenuService {
       const [menus, total] = await this.menuRepo.findAndCount({
         where: {
           restaurantId: { id: restaurantId },
-          tenantId,
+          tenantId: { id: tenantId },
         },
         take: limit,
         skip: (page - 1) * limit,
@@ -222,7 +221,7 @@ export class MenuService {
 
       let menu = await this.menuRepo.findOneBy({
         id: id,
-        tenantId,
+        tenantId: { id: tenantId },
       });
 
       if (!menu) {
@@ -258,7 +257,7 @@ export class MenuService {
       const tenantId = req?.tenantId;
       const menu = await this.menuRepo.findOneBy({
         id: id,
-        tenantId,
+        tenantId: { id: tenantId },
       });
 
       if (!menu) {
@@ -279,7 +278,7 @@ export class MenuService {
       const tenantId = req?.tenantId;
       const menu = await this.menuRepo.findOneBy({
         id: id,
-        tenantId,
+        tenantId: { id: tenantId },
       });
 
       if (!menu) {

@@ -30,11 +30,7 @@ export const verifyToken = (
         token,
         process.env.JWT_SECRET as string,
       ) as JwtPayload;
-      if (
-        user?.roleName !== 'ADMIN' &&
-        user?.tenantId?.id &&
-        user?.tenantId?.tenantId
-      ) {
+      if (user?.roleName !== 'ADMIN' && user?.tenantId?.id) {
         req.user = user;
         req.tenantId = user?.tenantId?.id;
         next();
