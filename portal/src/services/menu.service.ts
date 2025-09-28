@@ -88,11 +88,10 @@ export class MenuService {
 
   static async getMenu(req: Request | any): Promise<apiResponse> {
     try {
-      const { id } = req.params;
-      const tenantId = req?.tenantId;
+      const { id, restaurantId } = req.params;
       const menu = await this.menuRepo.findOneBy({
         id: Number(id),
-        tenantId,
+        restaurantId: { id: Number(restaurantId) },
       });
       if (!menu) {
         return { status: 400, message: 'Menu not found!' };

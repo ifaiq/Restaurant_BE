@@ -20,7 +20,7 @@ router.post('/create', verifyTokenAndOwner, async (req, res) => {
   await createMenu(req, res);
 });
 
-router.get('/:id', verifyToken, async (req, res) => {
+router.get('/:id/:restaurantId', async (req, res) => {
   await getMenu(req, res);
 });
 

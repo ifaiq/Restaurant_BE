@@ -6,6 +6,7 @@ import userRouter from './routes/users.route';
 import uploadRouter from './routes/uploadFile.route';
 import restaurantRouter from './routes/restaurant.route';
 import menuRouter from './routes/menu.route';
+import orderRouter from './routes/order.route';
 import helmet from 'helmet';
 
 import cors from 'cors';
@@ -88,6 +89,7 @@ app.use('/api/restaurant', restaurantRouter);
 app.use('/api/menu', menuRouter);
 app.use('/api/users', userRouter);
 app.use('/api/upload', uploadRouter);
+app.use('/api/order', orderRouter);
 app.get('/', (req: Request, res: Response) => {
   res.status(404).send('Nobody’s home.💀');
 });

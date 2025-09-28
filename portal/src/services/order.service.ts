@@ -19,24 +19,31 @@ export class OrderService {
 
   static async createOrder(req: Request | any): Promise<apiResponse> {
     try {
-      const tenantId = req?.tenantId;
-      if (!tenantId) {
-        return { status: 400, message: 'Tenant ID is required!' };
-      }
       const {
         restaurantId,
+        menuId,
         tableId,
         items,
         specialInstructions,
         paymentMethod,
       } = req.body;
 
-      // Verify restaurant exists and belongs to tenant
+      const menuData = await AppDataSource.getRepository('Menu').findOneBy({
+        id: menuId,
+        restaurantId,
+      });
+
+      if (!menuData) {
+        return {
+          status: 400,
+          message: 'Menu not found!',
+        };
+      }
+
       const restaurant = await AppDataSource.getRepository(
         'Restaurant',
       ).findOneBy({
         id: restaurantId,
-        tenantId,
       });
 
       if (!restaurant) {
@@ -46,13 +53,11 @@ export class OrderService {
         };
       }
 
-      // Verify table exists if provided
       let table = null;
       if (tableId) {
         table = await AppDataSource.getRepository('Table').findOneBy({
           id: tableId,
           restaurant: { id: restaurantId },
-          tenantId,
         });
 
         if (!table) {
@@ -62,8 +67,12 @@ export class OrderService {
           };
         }
       }
-
-      // Calculate totals
+      if (restaurant?.tenantId?.id !== menuData?.tenantId?.id) {
+        return {
+          status: 400,
+          message: 'Restaurant and menu do not belong to the same tenant!',
+        };
+      }
       let subtotal = 0;
       items.forEach((item: any) => {
         let itemTotal = item.unitPrice * item.quantity;
@@ -93,7 +102,7 @@ export class OrderService {
         totalAmount,
         items,
         specialInstructions,
-        tenantId,
+        tenantId: restaurant?.tenantId,
       });
 
       order = await this.orderRepo.save(order);
@@ -113,11 +122,10 @@ export class OrderService {
 
   static async getOrder(req: Request | any): Promise<apiResponse> {
     try {
-      const { id } = req.params;
-      const tenantId = req?.tenantId;
+      const { id, restaurantId } = req.params;
       const order = await this.orderRepo.findOneBy({
         id: Number(id),
-        tenantId,
+        restaurant: { id: restaurantId },
       });
       if (!order) {
         return { status: 400, message: 'Order not found!' };

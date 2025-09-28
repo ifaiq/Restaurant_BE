@@ -97,6 +97,7 @@ export class Menu {
   menuItems?: Array<{
     id?: string;
     itemName: string;
+    picture?: string;
     description?: string;
     price: number;
     itemType?: string;
@@ -123,6 +124,7 @@ export class Menu {
     id?: string;
     name: string;
     price?: number;
+    picture?: string;
     description?: string;
     isActive?: boolean;
     isRequired?: boolean;
