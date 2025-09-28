@@ -17,7 +17,7 @@ export const AppDataSource = new DataSource({
   password: process.env.POSTGRES_PASSWORD,
   database: process.env.POSTGRES_NAME,
   entities: [User, Tenant, Restaurant, Menu, Table, Order],
-  synchronize: true,
+  synchronize: false,
 });
 
 export const connectDB = async () => {
