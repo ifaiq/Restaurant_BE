@@ -90,8 +90,8 @@ export class MenuService {
     try {
       const { id, restaurantId } = req.params;
       const menu = await this.menuRepo.findOneBy({
-        id: Number(id),
-        restaurantId: { id: Number(restaurantId) },
+        id: id,
+        restaurantId: { id: restaurantId },
       });
       if (!menu) {
         return { status: 400, message: 'Menu not found!' };
@@ -121,7 +121,7 @@ export class MenuService {
       }
 
       if (restaurantId) {
-        whereCondition.restaurantId = { id: Number(restaurantId) };
+        whereCondition.restaurantId = { id: restaurantId };
       }
 
       const [menus, total] = await this.menuRepo.findAndCount({
@@ -157,7 +157,7 @@ export class MenuService {
         'Restaurant',
       ).findOne({
         where: {
-          id: Number(restaurantId),
+          id: restaurantId,
           tenantId,
         },
         relations: ['tenantId'],
@@ -175,7 +175,7 @@ export class MenuService {
 
       const [menus, total] = await this.menuRepo.findAndCount({
         where: {
-          restaurantId: { id: Number(restaurantId) },
+          restaurantId: { id: restaurantId },
           tenantId,
         },
         take: limit,
@@ -221,7 +221,7 @@ export class MenuService {
       const tenantId = req?.tenantId;
 
       let menu = await this.menuRepo.findOneBy({
-        id: Number(id),
+        id: id,
         tenantId,
       });
 
@@ -257,7 +257,7 @@ export class MenuService {
       const { id } = req.params;
       const tenantId = req?.tenantId;
       const menu = await this.menuRepo.findOneBy({
-        id: Number(id),
+        id: id,
         tenantId,
       });
 
@@ -265,7 +265,7 @@ export class MenuService {
         return { status: 400, message: 'Menu not found!' };
       }
 
-      await this.menuRepo.delete({ id: Number(id) });
+      await this.menuRepo.delete({ id: id });
 
       return { status: 200, message: 'Menu deleted successfully!' };
     } catch (error: any) {
@@ -278,7 +278,7 @@ export class MenuService {
       const { id } = req.params;
       const tenantId = req?.tenantId;
       const menu = await this.menuRepo.findOneBy({
-        id: Number(id),
+        id: id,
         tenantId,
       });
 

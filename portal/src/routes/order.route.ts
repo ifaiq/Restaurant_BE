@@ -16,7 +16,7 @@ import { verifyToken, verifyTokenAndAdmin } from '../middlewares/verification';
 const router = Router();
 
 // Create order
-router.post('/create', verifyToken, async (req, res) => {
+router.post('/create', async (req, res) => {
   await createOrder(req, res);
 });
 

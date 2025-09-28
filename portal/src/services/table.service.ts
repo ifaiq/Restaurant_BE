@@ -14,17 +14,11 @@ export class TableService {
 
   static async createTable(req: Request | any): Promise<apiResponse> {
     try {
-      const tenantId = req?.tenantId;
-      if (!tenantId) {
-        return { status: 400, message: 'Tenant ID is required!' };
-      }
-      const { tableNumber, tableName, restaurantId } = req.body;
+      const { tableNumber, restaurantId, seatingCapacity } = req.body;
 
-      // Check if table number already exists for this restaurant
       const existingTable = await this.tableRepo.findOneBy({
         tableNumber,
         restaurant: { id: restaurantId },
-        tenantId,
       });
 
       if (existingTable) {
@@ -34,12 +28,11 @@ export class TableService {
         };
       }
 
-      // Verify restaurant exists and belongs to tenant
       const restaurant = await AppDataSource.getRepository(
         'Restaurant',
-      ).findOneBy({
-        id: restaurantId,
-        tenantId,
+      ).findOne({
+        where: { id: restaurantId },
+        relations: ['tenantId'],
       });
 
       if (!restaurant) {
@@ -51,14 +44,14 @@ export class TableService {
 
       // Generate QR code data
       const qrCodeData = uuidv4();
-      const qrCodeUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/menu/${restaurantId}?table=${tableNumber}&qr=${qrCodeData}`;
-
+      //const qrCodeUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/menu/${restaurantId}?table=${tableNumber}&qr=${qrCodeData}`;
+      console.log(restaurant);
       let table = this.tableRepo.create({
         tableNumber,
-        tableName,
+        seatingCapacity,
         restaurant: { id: restaurantId },
         qrCode: qrCodeData,
-        tenantId,
+        tenantId: { id: restaurant.tenantId?.id },
       });
 
       table = await this.tableRepo.save(table);
@@ -78,11 +71,16 @@ export class TableService {
 
   static async getTable(req: Request | any): Promise<apiResponse> {
     try {
-      const { id } = req.params;
-      const tenantId = req?.tenantId;
+      const { id, restaurantId } = req.params;
+      const restaurant = await AppDataSource.getRepository(
+        'Restaurant',
+      ).findOneBy({
+        id: restaurantId,
+      });
+
       const table = await this.tableRepo.findOneBy({
-        id: Number(id),
-        tenantId,
+        id: id,
+        tenantId: restaurant?.tenantId,
       });
       if (!table) {
         return { status: 400, message: 'Table not found!' };
@@ -132,7 +130,7 @@ export class TableService {
       }
 
       if (restaurantId) {
-        whereCondition.restaurant = { id: Number(restaurantId) };
+        whereCondition.restaurant = { id: restaurantId };
       }
 
       if (status) {
@@ -177,7 +175,7 @@ export class TableService {
       const restaurant = await AppDataSource.getRepository(
         'Restaurant',
       ).findOneBy({
-        id: Number(restaurantId),
+        id: restaurantId,
         tenantId,
       });
 
@@ -187,7 +185,7 @@ export class TableService {
 
       const [tables, total] = await this.tableRepo.findAndCount({
         where: {
-          restaurant: { id: Number(restaurantId) },
+          restaurant: { id: restaurantId },
           tenantId,
         },
         take: limit,
@@ -273,7 +271,7 @@ export class TableService {
       const tenantId = req?.tenantId;
 
       let table = await this.tableRepo.findOneBy({
-        id: Number(id),
+        id: id,
         tenantId,
       });
 
@@ -331,7 +329,7 @@ export class TableService {
       const { id } = req.params;
       const tenantId = req?.tenantId;
       const table = await this.tableRepo.findOneBy({
-        id: Number(id),
+        id: id,
         tenantId,
       });
 
@@ -339,7 +337,7 @@ export class TableService {
         return { status: 400, message: 'Table not found!' };
       }
 
-      await this.tableRepo.delete({ id: Number(id) });
+      await this.tableRepo.delete({ id: id });
 
       return { status: 200, message: 'Table deleted successfully!' };
     } catch (error: any) {

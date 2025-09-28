@@ -74,7 +74,7 @@ export class UserService {
       const tenantId = req?.tenantId;
       const userData = await this.userRepo.findOne({
         where: {
-          id: Number(id),
+          id: id,
           isDeleted: false,
           tenantId: {
             id: tenantId,
@@ -96,7 +96,7 @@ export class UserService {
       const tenantId = req?.tenantId;
       const userData = await this.userRepo.findOne({
         where: {
-          id: Number(id),
+          id: id,
           isDeleted: false,
           tenantId: {
             id: tenantId,
@@ -117,7 +117,7 @@ export class UserService {
       const { id } = req.params;
       const tenantId = req?.tenantId;
       const userData = await this.userRepo.findOneBy({
-        id: Number(id),
+        id: id,
         isDeleted: false,
         tenantId: {
           id: tenantId,
@@ -144,7 +144,7 @@ export class UserService {
       const { country, name } = req.body;
       let userData = await this.userRepo.findOne({
         where: {
-          id: Number(id),
+          id: id,
           tenantId: {
             id: tenantId,
           },

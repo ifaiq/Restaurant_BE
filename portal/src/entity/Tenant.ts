@@ -1,18 +1,14 @@
 import {
   Entity,
   PrimaryGeneratedColumn,
-  Column,
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
 
 @Entity('tenants')
 export class Tenant {
-  @PrimaryGeneratedColumn()
-  id!: number;
-
-  @Column({ type: 'uuid', unique: true })
-  tenantId!: string;
+  @PrimaryGeneratedColumn('uuid')
+  id!: string;
 
   @CreateDateColumn()
   createdAt!: Date;

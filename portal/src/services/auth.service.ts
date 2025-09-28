@@ -10,7 +10,6 @@ import { generateCode } from '../utils/generatorID';
 import { LessThan, MoreThan } from 'typeorm';
 import { EmailVerificationService } from '../utils/nodemailer';
 import { Tenant } from '../entity/Tenant';
-import { v4 as uuidv4 } from 'uuid';
 import {
   resetPasswordEmailTemplate,
   resetPasswordKeyEmailTemplate,
@@ -324,9 +323,7 @@ export class AuthService {
 
   static async genTenantId(): Promise<apiResponse> {
     try {
-      const newCompany = await this.tenantRepo.create({
-        tenantId: uuidv4(),
-      });
+      const newCompany = await this.tenantRepo.create({});
 
       await this.tenantRepo.save(newCompany);
       return { status: 200, data: newCompany };

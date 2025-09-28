@@ -8,7 +8,7 @@ import restaurantRouter from './routes/restaurant.route';
 import menuRouter from './routes/menu.route';
 import orderRouter from './routes/order.route';
 import helmet from 'helmet';
-
+import tableRouter from './routes/table.route';
 import cors from 'cors';
 import dotenv from 'dotenv';
 dotenv.config({ path: '../.env' });
@@ -90,6 +90,7 @@ app.use('/api/menu', menuRouter);
 app.use('/api/users', userRouter);
 app.use('/api/upload', uploadRouter);
 app.use('/api/order', orderRouter);
+app.use('/api/table', tableRouter);
 app.get('/', (req: Request, res: Response) => {
   res.status(404).send('Nobody’s home.💀');
 });

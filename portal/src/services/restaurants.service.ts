@@ -179,7 +179,7 @@ export class RestaurantService {
       const { id } = req.params;
       const tenantId = req?.tenantId;
       const restaurant = await this.restaurantRepo.findOneBy({
-        id: Number(id),
+        id: id,
         tenantId,
       });
       if (!restaurant) {
@@ -239,7 +239,7 @@ export class RestaurantService {
 
       // Verify parent restaurant exists
       const parentRestaurant = await this.restaurantRepo.findOneBy({
-        id: Number(parentId),
+        id: parentId,
         tenantId,
         isBranch: false,
       });
@@ -250,7 +250,7 @@ export class RestaurantService {
 
       const [branches, total] = await this.restaurantRepo.findAndCount({
         where: {
-          parentRestaurantId: { id: Number(parentId) },
+          parentRestaurantId: { id: parentId },
           tenantId,
           isBranch: true,
         },
@@ -300,7 +300,7 @@ export class RestaurantService {
       } = req.body;
       const tenantId = req?.tenantId;
       let restaurant = await this.restaurantRepo.findOneBy({
-        id: Number(id),
+        id: id,
         tenantId: {
           id: tenantId,
         },
@@ -358,7 +358,7 @@ export class RestaurantService {
       const { id } = req.params;
       const tenantId = req?.tenantId;
       const restaurant = await this.restaurantRepo.findOneBy({
-        id: Number(id),
+        id: id,
         tenantId: {
           id: tenantId,
         },
@@ -368,7 +368,7 @@ export class RestaurantService {
       }
       const usersWithRestaurant = await this.userRepo.count({
         where: {
-          restaurantId: { id: Number(id) },
+          restaurantId: { id: id },
           tenantId: {
             id: tenantId,
           },
@@ -382,7 +382,7 @@ export class RestaurantService {
             'Restaurant is assigned to one or more users and cannot be deleted.',
         };
       }
-      await this.restaurantRepo.delete({ id: Number(id) });
+      await this.restaurantRepo.delete({ id: id });
 
       return { status: 200, message: 'Restaurant deleted successfully!' };
     } catch (error: any) {

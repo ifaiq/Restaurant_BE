@@ -30,20 +30,14 @@ export enum TableStatus {
 
 @Entity()
 export class Table {
-  @PrimaryGeneratedColumn()
-  id!: number;
+  @PrimaryGeneratedColumn('uuid')
+  id!: string;
 
   @Column()
   @IsNotEmpty({ message: 'Table number is required' })
   @IsString({ message: 'Table number must be a string' })
   @MaxLength(20, { message: 'Table number must not exceed 20 characters' })
   tableNumber!: string;
-
-  @Column({ nullable: true })
-  @IsOptional()
-  @IsString({ message: 'Table name must be a string' })
-  @MaxLength(100, { message: 'Table name must not exceed 100 characters' })
-  tableName?: string;
 
   @ManyToOne(() => Restaurant, (restaurant) => restaurant.tables, {
     onDelete: 'CASCADE',

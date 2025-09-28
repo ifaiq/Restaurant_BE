@@ -47,8 +47,8 @@ export enum RestaurantType {
 
 @Entity()
 export class Restaurant {
-  @PrimaryGeneratedColumn()
-  id!: number;
+  @PrimaryGeneratedColumn('uuid')
+  id!: string;
 
   @Column({ nullable: true })
   @IsNotEmpty({ message: 'Restaurant name is required' })

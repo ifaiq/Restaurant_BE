@@ -124,7 +124,7 @@ export class OrderService {
     try {
       const { id, restaurantId } = req.params;
       const order = await this.orderRepo.findOneBy({
-        id: Number(id),
+        id: id,
         restaurant: { id: restaurantId },
       });
       if (!order) {
@@ -176,7 +176,7 @@ export class OrderService {
       }
 
       if (restaurantId) {
-        whereCondition.restaurant = { id: Number(restaurantId) };
+        whereCondition.restaurant = { id: restaurantId };
       }
 
       if (status) {
@@ -228,7 +228,7 @@ export class OrderService {
       const restaurant = await AppDataSource.getRepository(
         'Restaurant',
       ).findOneBy({
-        id: Number(restaurantId),
+        id: restaurantId,
         tenantId,
       });
 
@@ -238,7 +238,7 @@ export class OrderService {
 
       const [orders, total] = await this.orderRepo.findAndCount({
         where: {
-          restaurant: { id: Number(restaurantId) },
+          restaurant: { id: restaurantId },
           tenantId,
         },
         take: limit,
@@ -275,7 +275,7 @@ export class OrderService {
 
       // Verify table exists
       const table = await AppDataSource.getRepository('Table').findOneBy({
-        id: Number(tableId),
+        id: tableId,
         tenantId,
       });
 
@@ -285,7 +285,7 @@ export class OrderService {
 
       const [orders, total] = await this.orderRepo.findAndCount({
         where: {
-          table: { id: Number(tableId) },
+          table: { id: tableId },
           tenantId,
         },
         take: limit,
@@ -326,7 +326,7 @@ export class OrderService {
       const tenantId = req?.tenantId;
 
       let order = await this.orderRepo.findOneBy({
-        id: Number(id),
+        id: id,
         tenantId,
       });
 
@@ -386,7 +386,7 @@ export class OrderService {
       const tenantId = req?.tenantId;
 
       let order = await this.orderRepo.findOneBy({
-        id: Number(id),
+        id: id,
         tenantId,
       });
 
@@ -415,7 +415,7 @@ export class OrderService {
       const tenantId = req?.tenantId;
 
       let order = await this.orderRepo.findOneBy({
-        id: Number(id),
+        id: id,
         tenantId,
       });
 
@@ -445,7 +445,7 @@ export class OrderService {
       const { id } = req.params;
       const tenantId = req?.tenantId;
       const order = await this.orderRepo.findOneBy({
-        id: Number(id),
+        id: id,
         tenantId,
       });
 
@@ -464,7 +464,7 @@ export class OrderService {
         };
       }
 
-      await this.orderRepo.delete({ id: Number(id) });
+      await this.orderRepo.delete({ id: id });
 
       return { status: 200, message: 'Order deleted successfully!' };
     } catch (error: any) {

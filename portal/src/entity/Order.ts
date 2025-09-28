@@ -66,8 +66,8 @@ export interface OrderItem {
 
 @Entity()
 export class Order {
-  @PrimaryGeneratedColumn()
-  id!: number;
+  @PrimaryGeneratedColumn('uuid')
+  id!: string;
 
   @Column({ unique: true })
   @IsNotEmpty({ message: 'Order number is required' })

@@ -43,8 +43,8 @@ export enum MenuType {
 
 @Entity()
 export class Menu {
-  @PrimaryGeneratedColumn()
-  id!: number;
+  @PrimaryGeneratedColumn('uuid')
+  id!: string;
 
   @Column({ nullable: true })
   @IsNotEmpty({ message: 'Menu name is required' })
