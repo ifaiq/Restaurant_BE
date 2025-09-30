@@ -21,7 +21,7 @@ router.post('/create', async (req, res) => {
 });
 
 // Get order by ID
-router.get('/:id', verifyToken, async (req, res) => {
+router.get('/:id/:restaurantId', async (req, res) => {
   await getOrder(req, res);
 });
 

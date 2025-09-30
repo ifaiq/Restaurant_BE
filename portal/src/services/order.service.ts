@@ -27,12 +27,10 @@ export class OrderService {
         specialInstructions,
         paymentMethod,
       } = req.body;
-
       const menuData = await AppDataSource.getRepository('Menu').findOneBy({
         id: menuId,
-        restaurantId,
+        restaurantId: { id: restaurantId },
       });
-
       if (!menuData) {
         return {
           status: 400,
@@ -93,8 +91,8 @@ export class OrderService {
 
       let order = this.orderRepo.create({
         orderNumber,
-        restaurant: { id: restaurantId },
-        table: tableId ? { id: tableId } : undefined,
+        restaurant,
+        table: tableId ? tableId : undefined,
         status: OrderStatus.PENDING,
         paymentStatus: PaymentStatus.PENDING,
         paymentMethod,
@@ -123,9 +121,21 @@ export class OrderService {
   static async getOrder(req: Request | any): Promise<apiResponse> {
     try {
       const { id, restaurantId } = req.params;
-      const order = await this.orderRepo.findOneBy({
-        id: id,
-        restaurant: { id: restaurantId },
+      const restaurant = await AppDataSource.getRepository(
+        'Restaurant',
+      ).findOneBy({
+        id: restaurantId,
+      });
+      if (!restaurant) {
+        return { status: 400, message: 'Restaurant not found!' };
+      }
+      const order = await this.orderRepo.findOne({
+        where: {
+          id: id,
+          restaurant: { id: restaurantId },
+          tenantId: { id: restaurant?.tenantId?.id },
+        },
+        relations: ['tenantId', 'restaurant', 'table', 'deletedBy'],
       });
       if (!order) {
         return { status: 400, message: 'Order not found!' };
@@ -199,6 +209,7 @@ export class OrderService {
         take: limit,
         skip: (page - 1) * limit,
         order: { createdAt: 'DESC' },
+        relations: ['tenantId', 'restaurant', 'table', 'deletedBy'],
       });
 
       const totalPages = Math.ceil(total / limit);
@@ -239,11 +250,12 @@ export class OrderService {
       const [orders, total] = await this.orderRepo.findAndCount({
         where: {
           restaurant: { id: restaurantId },
-          tenantId,
+          tenantId: { id: tenantId },
         },
         take: limit,
         skip: (page - 1) * limit,
         order: { createdAt: 'DESC' },
+        relations: ['tenantId', 'restaurant', 'table', 'deletedBy'],
       });
 
       const totalPages = Math.ceil(total / limit);
@@ -286,11 +298,12 @@ export class OrderService {
       const [orders, total] = await this.orderRepo.findAndCount({
         where: {
           table: { id: tableId },
-          tenantId,
+          tenantId: { id: tenantId },
         },
         take: limit,
         skip: (page - 1) * limit,
         order: { createdAt: 'DESC' },
+        relations: ['tenantId', 'restaurant', 'table', 'deletedBy'],
       });
 
       const totalPages = Math.ceil(total / limit);
