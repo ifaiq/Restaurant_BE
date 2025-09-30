@@ -35,7 +35,7 @@ export class AuthService {
       // })();
       const existingUser = await this.userRepo.findOne({
         where: { email },
-        relations: ['tenantId'],
+        relations: ['tenantId', 'restaurantId'],
       });
       if (!existingUser || !email) {
         return { status: 404, message: 'User not found!' };
