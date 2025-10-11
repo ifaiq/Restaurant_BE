@@ -111,9 +111,12 @@ export class RestaurantService {
         };
       }
 
-      const parentRestaurant = await this.restaurantRepo.findOneBy({
-        id: parentRestaurantId,
-        isBranch: false,
+      const parentRestaurant = await this.restaurantRepo.findOne({
+        where: {
+          id: parentRestaurantId,
+          isBranch: false,
+        },
+        relations: ['tenantId', 'tables'],
       });
 
       if (!parentRestaurant) {
@@ -122,11 +125,13 @@ export class RestaurantService {
           message: 'Parent restaurant not found or is not a valid parent!',
         };
       }
-
-      const existingBranch = await this.restaurantRepo.findOneBy({
-        restaurantName,
-        tenantId: parentRestaurant.tenantId,
-        parentRestaurantId,
+      const existingBranch = await this.restaurantRepo.findOne({
+        where: {
+          restaurantName,
+          tenantId: { id: parentRestaurant.tenantId?.id },
+          parentRestaurantId: { id: parentRestaurantId },
+        },
+        relations: ['tenantId', 'tables', 'parentRestaurantId'],
       });
 
       if (existingBranch) {
@@ -137,7 +142,6 @@ export class RestaurantService {
         };
       }
 
-      // Create branch restaurant
       let branchRestaurant = this.restaurantRepo.create({
         address,
         description,
@@ -147,7 +151,7 @@ export class RestaurantService {
         restaurantType: restaurantType || parentRestaurant.restaurantType,
         seatingCapacity,
         isBranch: true,
-        parentRestaurantId,
+        parentRestaurantId: { id: parentRestaurantId },
         email,
         colourTheme: colourTheme || parentRestaurant.colourTheme,
         restaurantLogo: restaurantLogo || parentRestaurant.restaurantLogo,
@@ -156,7 +160,7 @@ export class RestaurantService {
         state,
         country,
         postalCode,
-        tenantId: parentRestaurant.tenantId,
+        tenantId: { id: parentRestaurant?.tenantId?.id },
       });
 
       branchRestaurant = await this.restaurantRepo.save(branchRestaurant);
@@ -178,9 +182,12 @@ export class RestaurantService {
     try {
       const { id } = req.params;
       const tenantId = req?.tenantId;
-      const restaurant = await this.restaurantRepo.findOneBy({
-        id: id,
-        tenantId,
+      const restaurant = await this.restaurantRepo.findOne({
+        where: {
+          id,
+          tenantId: { id: tenantId },
+        },
+        relations: ['tenantId', 'tables'],
       });
       if (!restaurant) {
         return { status: 400, message: 'Restaurant not found!' };
@@ -196,6 +203,7 @@ export class RestaurantService {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 10;
       const tenantId = req?.tenantId;
+      const isBranch = req.query.isBranch as string;
       const search = req.query.search as string;
       const whereCondition: any = {
         tenantId: {
@@ -206,12 +214,16 @@ export class RestaurantService {
       if (search) {
         whereCondition.restaurantName = ILike(`%${search}%`);
       }
+      if (isBranch === 'true') {
+        whereCondition.isBranch = true;
+      }
 
       const [restaurants, total] = await this.restaurantRepo.findAndCount({
         where: whereCondition,
         take: limit,
         skip: (page - 1) * limit,
         order: { createdAt: 'DESC' },
+        relations: ['tenantId', 'tables'],
       });
 
       const totalPages = Math.ceil(total / limit);
@@ -238,10 +250,12 @@ export class RestaurantService {
       const limit = parseInt(req.query.limit as string) || 10;
 
       // Verify parent restaurant exists
-      const parentRestaurant = await this.restaurantRepo.findOneBy({
-        id: parentId,
-        tenantId,
-        isBranch: false,
+      const parentRestaurant = await this.restaurantRepo.findOne({
+        where: {
+          id: parentId,
+          tenantId: { id: tenantId },
+        },
+        relations: ['tenantId', 'tables'],
       });
 
       if (!parentRestaurant) {
@@ -251,12 +265,13 @@ export class RestaurantService {
       const [branches, total] = await this.restaurantRepo.findAndCount({
         where: {
           parentRestaurantId: { id: parentId },
-          tenantId,
+          tenantId: { id: tenantId },
           isBranch: true,
         },
         take: limit,
         skip: (page - 1) * limit,
         order: { createdAt: 'DESC' },
+        relations: ['tenantId', 'parentRestaurantId'],
       });
 
       const totalPages = Math.ceil(total / limit);
@@ -298,12 +313,8 @@ export class RestaurantService {
         operatingHours,
         isActive,
       } = req.body;
-      const tenantId = req?.tenantId;
       let restaurant = await this.restaurantRepo.findOneBy({
-        id: id,
-        tenantId: {
-          id: tenantId,
-        },
+        id,
       });
       if (!restaurant) {
         return { status: 400, message: 'Restaurant not found!' };
@@ -328,7 +339,7 @@ export class RestaurantService {
         : restaurant.seatingCapacity;
       restaurant.isBranch = isBranch ? isBranch : restaurant.isBranch;
       restaurant.parentRestaurantId = parentRestaurantId
-        ? parentRestaurantId
+        ? ({ id: parentRestaurantId } as unknown as Restaurant)
         : restaurant.parentRestaurantId;
       restaurant.email = email ? email : restaurant.email;
       restaurant.colourTheme = colourTheme

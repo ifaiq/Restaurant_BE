@@ -7,6 +7,7 @@ import { AppDataSource } from '../config/database';
 import { User } from '../entity/User';
 import { ILike } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
+import QRCode from 'qrcode';
 
 export class TableService {
   private static tableRepo = AppDataSource.getRepository(Table);
@@ -44,7 +45,7 @@ export class TableService {
 
       // Generate QR code data
       const qrCodeData = uuidv4();
-      //const qrCodeUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/menu/${restaurantId}?table=${tableNumber}&qr=${qrCodeData}`;
+      //const qrCodeUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/api/menu/${restaurantId}?table=${tableNumber}&qr=${qrCodeData}`;
       let table = this.tableRepo.create({
         tableNumber,
         seatingCapacity,
@@ -212,56 +213,42 @@ export class TableService {
     }
   }
 
-  // static async updateTable(req: Request | any): Promise<apiResponse> {
-  //   try {
-  //     const { id } = req.params;
-  //     const {
-  //       tableNumber,
-  //       tableName,
-  //       tableType,
-  //       status,
-  //       seatingCapacity,
-  //       location,
-  //       description,
-  //       coordinates,
-  //       features,
-  //       isActive,
-  //     } = req.body;
-  //     const tenantId = req?.tenantId;
+  static async updateTable(req: Request | any): Promise<apiResponse> {
+    try {
+      const { id } = req.params;
+      const { tableNumber, status, seatingCapacity } = req.body;
+      const tenantId = req?.tenantId;
 
-  //     let table = await this.tableRepo.findOneBy({
-  //       id: Number(id),
-  //       tenantId,
-  //     });
+      let table = await this.tableRepo.findOne({
+        where: {
+          id: id,
+          tenantId: {
+            id: tenantId,
+          },
+        },
+      });
 
-  //     if (!table) {
-  //       return { status: 400, message: 'Table not found!' };
-  //     }
+      if (!table) {
+        return { status: 400, message: 'Table not found!' };
+      }
 
-  //     table.tableNumber = tableNumber ? tableNumber : table.tableNumber;
-  //     table.tableName = tableName ? tableName : table.tableName;
-  //     table.tableType = tableType ? tableType : table.tableType;
-  //     table.status = status ? status : table.status;
-  //     table.seatingCapacity = seatingCapacity
-  //       ? seatingCapacity
-  //       : table.seatingCapacity;
-  //     table.location = location ? location : table.location;
-  //     table.description = description ? description : table.description;
-  //     table.coordinates = coordinates ? coordinates : table.coordinates;
-  //     table.features = features ? features : table.features;
-  //     table.isActive = isActive ? isActive : table.isActive;
+      table.tableNumber = tableNumber ? tableNumber : table.tableNumber;
+      table.status = status ? status : table.status;
+      table.seatingCapacity = seatingCapacity
+        ? seatingCapacity
+        : table.seatingCapacity;
 
-  //     table = await this.tableRepo.save(table);
+      table = await this.tableRepo.save(table);
 
-  //     return {
-  //       status: 200,
-  //       message: 'Table updated successfully!',
-  //       data: table,
-  //     };
-  //   } catch (error: any) {
-  //     return { status: 500, error: error.message };
-  //   }
-  // }
+      return {
+        status: 200,
+        message: 'Table updated successfully!',
+        data: table,
+      };
+    } catch (error: any) {
+      return { status: 500, error: error.message };
+    }
+  }
 
   static async updateTableStatus(req: Request | any): Promise<apiResponse> {
     try {
@@ -269,9 +256,13 @@ export class TableService {
       const { status } = req.body;
       const tenantId = req?.tenantId;
 
-      let table = await this.tableRepo.findOneBy({
-        id: id,
-        tenantId,
+      let table = await this.tableRepo.findOne({
+        where: {
+          id: id,
+          tenantId: {
+            id: tenantId,
+          },
+        },
       });
 
       if (!table) {
@@ -339,6 +330,111 @@ export class TableService {
       await this.tableRepo.delete({ id: id });
 
       return { status: 200, message: 'Table deleted successfully!' };
+    } catch (error: any) {
+      return { status: 500, error: error.message };
+    }
+  }
+
+  static async generateQRCode(req: Request | any): Promise<apiResponse> {
+    try {
+      const { id } = req.params;
+      const tenantId = req?.tenantId;
+
+      const table = await this.tableRepo.findOne({
+        where: {
+          id: id,
+          tenantId: {
+            id: tenantId,
+          },
+        },
+        relations: ['restaurant'],
+      });
+
+      if (!table) {
+        return { status: 400, message: 'Table not found!' };
+      }
+
+      // Generate QR code data URL
+      const qrCodeData = table.qrCode || uuidv4();
+      const qrCodeUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/menu/${table.restaurant.id}?table=${table.tableNumber}&qr=${qrCodeData}`;
+
+      const qrCodeImage = await QRCode.toDataURL(qrCodeUrl, {
+        width: 300,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF',
+        },
+      });
+
+      // Update table with QR code data and image
+      if (!table.qrCode) {
+        table.qrCode = qrCodeData;
+      }
+      table.qrCodeImage = qrCodeImage;
+      await this.tableRepo.save(table);
+
+      return {
+        status: 200,
+        message: 'QR code generated successfully!',
+        data: {
+          tableId: table.id,
+          tableNumber: table.tableNumber,
+          qrCodeData: qrCodeData,
+          qrCodeUrl: qrCodeUrl,
+          qrCodeImage: qrCodeImage,
+        },
+      };
+    } catch (error: any) {
+      return { status: 500, error: error.message };
+    }
+  }
+
+  static async regenerateQRCode(req: Request | any): Promise<apiResponse> {
+    try {
+      const { id } = req.params;
+      const tenantId = req?.tenantId;
+
+      const table = await this.tableRepo.findOne({
+        where: {
+          id: id,
+          tenantId,
+        },
+        relations: ['restaurant'],
+      });
+
+      if (!table) {
+        return { status: 400, message: 'Table not found!' };
+      }
+
+      const qrCodeData = uuidv4();
+      const qrCodeUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/menu/${table.restaurant.id}?table=${table.tableNumber}&qr=${qrCodeData}`;
+
+      const qrCodeImage = await QRCode.toDataURL(qrCodeUrl, {
+        width: 300,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF',
+        },
+      });
+
+      // Update table with new QR code data and image
+      table.qrCode = qrCodeData;
+      table.qrCodeImage = qrCodeImage;
+      await this.tableRepo.save(table);
+
+      return {
+        status: 200,
+        message: 'QR code regenerated successfully!',
+        data: {
+          tableId: table.id,
+          tableNumber: table.tableNumber,
+          qrCodeData: qrCodeData,
+          qrCodeUrl: qrCodeUrl,
+          qrCodeImage: qrCodeImage,
+        },
+      };
     } catch (error: any) {
       return { status: 500, error: error.message };
     }

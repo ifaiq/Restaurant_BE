@@ -63,6 +63,11 @@ export class Table {
   @MaxLength(500, { message: 'QR code must not exceed 500 characters' })
   qrCode?: string;
 
+  @Column({ type: 'text', nullable: true })
+  @IsOptional()
+  @IsString({ message: 'QR code image must be a string' })
+  qrCodeImage?: string;
+
   @Column({ default: false })
   @IsOptional()
   @IsBoolean({ message: 'isDeleted must be a boolean value' })

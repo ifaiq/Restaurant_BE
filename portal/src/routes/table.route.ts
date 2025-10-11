@@ -5,8 +5,8 @@ import {
   getTableByQR,
   getAllTables,
   getTablesByRestaurant,
-  // updateTable,
-  updateTableStatus,
+  updateTable,
+  // updateTableStatus,
   // regenerateQRCode,
   deleteTable,
 } from '../controllers/table.controller';
@@ -38,13 +38,13 @@ router.get('/restaurant/:restaurantId', verifyToken, async (req, res) => {
   await getTablesByRestaurant(req, res);
 });
 
-// router.put('/:id', verifyTokenAndAdmin, async (req, res) => {
-//   await updateTable(req, res);
-// });
-
-router.patch('/:id/status', verifyToken, async (req, res) => {
-  await updateTableStatus(req, res);
+router.put('/:id', verifyTokenAndAdmin, async (req, res) => {
+  await updateTable(req, res);
 });
+
+// router.patch('/:id/status', verifyToken, async (req, res) => {
+//   await updateTableStatus(req, res);
+// });
 
 // router.post('/:id/regenerate-qr', verifyTokenAndAdmin, async (req, res) => {
 //   await regenerateQRCode(req, res);

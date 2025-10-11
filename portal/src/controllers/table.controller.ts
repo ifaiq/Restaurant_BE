@@ -62,29 +62,29 @@ export async function getTablesByRestaurant(
   }
 }
 
-// export async function updateTable(
-//   req: Request,
-//   res: Response,
-// ): Promise<apiResponse> {
-//   try {
-//     const { status, ...data } = await TableService.updateTable(req);
-//     return res.status(status).send(data);
-//   } catch (error: any) {
-//     return res.status(500).send({ error: error.message });
-//   }
-// }
-
-export async function updateTableStatus(
+export async function updateTable(
   req: Request,
   res: Response,
 ): Promise<apiResponse> {
   try {
-    const { status, ...data } = await TableService.updateTableStatus(req);
+    const { status, ...data } = await TableService.updateTable(req);
     return res.status(status).send(data);
   } catch (error: any) {
     return res.status(500).send({ error: error.message });
   }
 }
+
+// export async function updateTableStatus(
+//   req: Request,
+//   res: Response,
+// ): Promise<apiResponse> {
+//   try {
+//     const { status, ...data } = await TableService.updateTableStatus(req);
+//     return res.status(status).send(data);
+//   } catch (error: any) {
+//     return res.status(500).send({ error: error.message });
+//   }
+// }
 
 // export async function regenerateQRCode(
 //   req: Request,

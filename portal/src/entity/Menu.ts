@@ -90,10 +90,6 @@ export class Menu {
 
   @Column({ type: 'jsonb', nullable: true })
   @IsOptional()
-  categories?: Record<string, any>;
-
-  @Column({ type: 'jsonb', nullable: true })
-  @IsOptional()
   menuItems?: Array<{
     id?: string;
     itemName: string;
@@ -102,7 +98,7 @@ export class Menu {
     price: number;
     itemType?: string;
     status?: string;
-    category?: string;
+    categoryId?: string; // references Category.id
     imageUrl?: string;
     allergens?: string;
     ingredients?: string;

@@ -3,6 +3,7 @@ import { apiResponse } from '../types/res';
 import dotenv from 'dotenv';
 dotenv.config({ path: '../.env' });
 import { Menu } from '../entity/Menu';
+import { Category } from '../entity/Category';
 import { AppDataSource } from '../config/database';
 import { User } from '../entity/User';
 import { ILike } from 'typeorm';
@@ -25,7 +26,6 @@ export class MenuService {
         status,
         language,
         currency,
-        categories,
         menuItems,
         modifiers,
       } = req.body;
@@ -64,7 +64,6 @@ export class MenuService {
         status,
         language,
         currency,
-        categories,
         menuItems,
         modifiers,
         tenantId,
@@ -95,7 +94,21 @@ export class MenuService {
       if (!menu) {
         return { status: 400, message: 'Menu not found!' };
       }
-      return { status: 200, data: menu };
+      const categories = await AppDataSource.getRepository(Category).find({
+        where: { restaurantId: { id: restaurantId }, isDeleted: false },
+        order: { createdAt: 'DESC' },
+      });
+      const categoryMap = new Map(
+        categories.map((c: any) => [c.id, { id: c.id, name: c.name }]),
+      );
+      const enrichedItems = menu.menuItems?.map((item: any) => ({
+        ...item,
+        category: item.categoryId ? categoryMap.get(item.categoryId) : null,
+      }));
+      return {
+        status: 200,
+        data: { ...menu, categories, menuItems: enrichedItems },
+      };
     } catch (error: any) {
       return { status: 500, error: error.message };
     }
@@ -182,6 +195,15 @@ export class MenuService {
         order: { createdAt: 'DESC' },
       });
 
+      const categories = await AppDataSource.getRepository(Category).find({
+        where: {
+          restaurantId: { id: restaurantId },
+          tenantId: { id: tenantId },
+          isDeleted: false,
+        },
+        order: { createdAt: 'DESC' },
+      });
+
       const totalPages = Math.ceil(total / limit);
 
       return {
@@ -195,6 +217,7 @@ export class MenuService {
             id: restaurant.id,
             name: restaurant.restaurantName,
           },
+          categories,
         },
       };
     } catch (error: any) {
@@ -212,7 +235,6 @@ export class MenuService {
         status,
         language,
         currency,
-        categories,
         menuItems,
         modifiers,
         isActive,
@@ -234,7 +256,6 @@ export class MenuService {
       menu.status = status ? status : menu.status;
       menu.language = language ? language : menu.language;
       menu.currency = currency ? currency : menu.currency;
-      menu.categories = categories ? categories : menu.categories;
       menu.menuItems = menuItems ? menuItems : menu.menuItems;
       menu.modifiers = modifiers ? modifiers : menu.modifiers;
       menu.isActive = isActive ? isActive : menu.isActive;
@@ -301,7 +322,28 @@ export class MenuService {
         }),
       };
 
-      return { status: 200, data: processedMenu };
+      const categories = await AppDataSource.getRepository(Category).find({
+        where: {
+          restaurantId: {
+            id: (menu as any).restaurantId?.id || (menu as any).restaurantId,
+          },
+          tenantId: { id: tenantId },
+          isDeleted: false,
+        },
+        order: { createdAt: 'DESC' },
+      });
+
+      const categoryMap = new Map(
+        categories.map((c: any) => [c.id, { id: c.id, name: c.name }]),
+      );
+      const enrichedItems = processedMenu.menuItems?.map((item: any) => ({
+        ...item,
+        category: item.categoryId ? categoryMap.get(item.categoryId) : null,
+      }));
+      return {
+        status: 200,
+        data: { ...processedMenu, categories, menuItems: enrichedItems },
+      };
     } catch (error: any) {
       return { status: 500, error: error.message };
     }
