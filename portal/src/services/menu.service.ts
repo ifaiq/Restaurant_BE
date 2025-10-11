@@ -2,7 +2,7 @@ import { Request } from 'express';
 import { apiResponse } from '../types/res';
 import dotenv from 'dotenv';
 dotenv.config({ path: '../.env' });
-import { Menu } from '../entity/Menu';
+import { Menu, MenuStatus } from '../entity/Menu';
 import { Category } from '../entity/Category';
 import { AppDataSource } from '../config/database';
 import { User } from '../entity/User';
@@ -18,22 +18,14 @@ export class MenuService {
       if (!tenantId) {
         return { status: 400, message: 'Tenant ID is required!' };
       }
-      const {
-        menuName,
-        description,
-        restaurantId,
-        menuType,
-        status,
-        language,
-        currency,
-        menuItems,
-        modifiers,
-      } = req.body;
+      const { menuName, description, restaurantId, menuItems } = req.body;
 
-      const existingMenu = await this.menuRepo.findOneBy({
-        menuName,
-        restaurantId: { id: restaurantId },
-        tenantId: { id: tenantId },
+      const existingMenu = await this.menuRepo.findOne({
+        where: {
+          menuName,
+          restaurant: { id: restaurantId },
+          tenant: { id: tenantId },
+        },
       });
       if (existingMenu) {
         return {
@@ -44,9 +36,9 @@ export class MenuService {
 
       const restaurant = await AppDataSource.getRepository(
         'Restaurant',
-      ).findOneBy({
-        id: restaurantId,
-        tenantId: { id: tenantId },
+      ).findOne({
+        where: { id: restaurantId, tenantId: { id: tenantId } },
+        relations: ['tenantId'],
       });
 
       if (!restaurant) {
@@ -59,14 +51,9 @@ export class MenuService {
       let menu = this.menuRepo.create({
         menuName,
         description,
-        restaurantId: { id: restaurantId },
-        menuType,
-        status,
-        language,
-        currency,
+        restaurant: { id: restaurantId } as any,
         menuItems,
-        modifiers,
-        tenantId,
+        tenant: { id: tenantId } as any,
       });
 
       menu = await this.menuRepo.save(menu);
@@ -87,9 +74,9 @@ export class MenuService {
   static async getMenu(req: Request | any): Promise<apiResponse> {
     try {
       const { id, restaurantId } = req.params;
-      const menu = await this.menuRepo.findOneBy({
-        id: id,
-        restaurantId: { id: restaurantId },
+      const menu = await this.menuRepo.findOne({
+        where: { id, restaurant: { id: restaurantId } },
+        relations: ['menuItems', 'menuItems.category', 'restaurant'],
       });
       if (!menu) {
         return { status: 400, message: 'Menu not found!' };
@@ -98,16 +85,29 @@ export class MenuService {
         where: { restaurantId: { id: restaurantId }, isDeleted: false },
         order: { createdAt: 'DESC' },
       });
+      const globalModifiers = await AppDataSource.getRepository(
+        'Modifier',
+      ).find({
+        where: { restaurant: { id: restaurantId }, isGlobal: true },
+        order: { createdAt: 'DESC' },
+      } as any);
       const categoryMap = new Map(
         categories.map((c: any) => [c.id, { id: c.id, name: c.name }]),
       );
       const enrichedItems = menu.menuItems?.map((item: any) => ({
         ...item,
-        category: item.categoryId ? categoryMap.get(item.categoryId) : null,
+        category:
+          item.category ||
+          (item.categoryId ? categoryMap.get(item.categoryId) : null),
       }));
       return {
         status: 200,
-        data: { ...menu, categories, menuItems: enrichedItems },
+        data: {
+          ...menu,
+          categories,
+          menuItems: enrichedItems,
+          globalModifiers,
+        },
       };
     } catch (error: any) {
       return { status: 500, error: error.message };
@@ -123,9 +123,7 @@ export class MenuService {
       const restaurantId = req.query.restaurantId as string;
 
       const whereCondition: any = {
-        tenantId: {
-          id: tenantId,
-        },
+        tenant: { id: tenantId },
       };
 
       if (search) {
@@ -133,7 +131,7 @@ export class MenuService {
       }
 
       if (restaurantId) {
-        whereCondition.restaurantId = { id: restaurantId };
+        whereCondition.restaurant = { id: restaurantId };
       }
 
       const [menus, total] = await this.menuRepo.findAndCount({
@@ -168,10 +166,7 @@ export class MenuService {
       const restaurant = await AppDataSource.getRepository(
         'Restaurant',
       ).findOne({
-        where: {
-          id: restaurantId,
-          tenantId: { id: tenantId },
-        },
+        where: { id: restaurantId },
         relations: ['tenantId'],
       });
 
@@ -186,10 +181,7 @@ export class MenuService {
       }
 
       const [menus, total] = await this.menuRepo.findAndCount({
-        where: {
-          restaurantId: { id: restaurantId },
-          tenantId: { id: tenantId },
-        },
+        where: { restaurant: { id: restaurantId }, tenant: { id: tenantId } },
         take: limit,
         skip: (page - 1) * limit,
         order: { createdAt: 'DESC' },
@@ -203,6 +195,12 @@ export class MenuService {
         },
         order: { createdAt: 'DESC' },
       });
+      const globalModifiers = await AppDataSource.getRepository(
+        'Modifier',
+      ).find({
+        where: { restaurant: { id: restaurantId }, isGlobal: true },
+        order: { createdAt: 'DESC' },
+      } as any);
 
       const totalPages = Math.ceil(total / limit);
 
@@ -218,6 +216,7 @@ export class MenuService {
             name: restaurant.restaurantName,
           },
           categories,
+          globalModifiers,
         },
       };
     } catch (error: any) {
@@ -228,22 +227,12 @@ export class MenuService {
   static async updateMenu(req: Request | any): Promise<apiResponse> {
     try {
       const { id } = req.params;
-      const {
-        menuName,
-        description,
-        menuType,
-        status,
-        language,
-        currency,
-        menuItems,
-        modifiers,
-        isActive,
-      } = req.body;
+      const { menuName, description, status, language, currency, menuItems } =
+        req.body;
       const tenantId = req?.tenantId;
 
-      let menu = await this.menuRepo.findOneBy({
-        id: id,
-        tenantId: { id: tenantId },
+      let menu = await this.menuRepo.findOne({
+        where: { id, tenant: { id: tenantId } },
       });
 
       if (!menu) {
@@ -252,13 +241,28 @@ export class MenuService {
 
       menu.menuName = menuName ? menuName : menu.menuName;
       menu.description = description ? description : menu.description;
-      menu.menuType = menuType ? menuType : menu.menuType;
-      menu.status = status ? status : menu.status;
+      // normalize status on update
+      const normalizedUpdateStatus = (() => {
+        if (!status) return undefined;
+        switch (String(status).toLowerCase()) {
+          case 'active':
+            return MenuStatus.ACTIVE;
+          case 'inactive':
+            return MenuStatus.INACTIVE;
+          case 'draft':
+            return MenuStatus.DRAFT;
+          case 'archived':
+            return MenuStatus.ARCHIVED;
+          default:
+            return status;
+        }
+      })();
+      menu.status = normalizedUpdateStatus
+        ? (normalizedUpdateStatus as any)
+        : menu.status;
       menu.language = language ? language : menu.language;
       menu.currency = currency ? currency : menu.currency;
       menu.menuItems = menuItems ? menuItems : menu.menuItems;
-      menu.modifiers = modifiers ? modifiers : menu.modifiers;
-      menu.isActive = isActive ? isActive : menu.isActive;
 
       menu = await this.menuRepo.save(menu);
 
@@ -276,9 +280,8 @@ export class MenuService {
     try {
       const { id } = req.params;
       const tenantId = req?.tenantId;
-      const menu = await this.menuRepo.findOneBy({
-        id: id,
-        tenantId: { id: tenantId },
+      const menu = await this.menuRepo.findOne({
+        where: { id, tenant: { id: tenantId } },
       });
 
       if (!menu) {
@@ -297,9 +300,15 @@ export class MenuService {
     try {
       const { id } = req.params;
       const tenantId = req?.tenantId;
-      const menu = await this.menuRepo.findOneBy({
-        id: id,
-        tenantId: { id: tenantId },
+      const menu = await this.menuRepo.findOne({
+        where: { id, tenant: { id: tenantId } },
+        relations: [
+          'menuItems',
+          'menuItems.modifierLinks',
+          'menuItems.modifierLinks.modifier',
+          'menuItems.category',
+          'restaurant',
+        ],
       });
 
       if (!menu) {
@@ -309,40 +318,47 @@ export class MenuService {
       // Process menu items to include their applicable modifiers
       const processedMenu = {
         ...menu,
-        menuItems: menu.menuItems?.map((item) => {
-          const applicableModifiers =
-            menu.modifiers?.filter((modifier) =>
-              item.availableModifiers?.includes(modifier.id || ''),
-            ) || [];
-
+        menuItems: menu.menuItems?.map((item: any) => {
+          const modifiers = (item.modifierLinks || []).map(
+            (link: any) => link.modifier,
+          );
           return {
             ...item,
-            modifiers: applicableModifiers,
+            modifiers,
           };
         }),
       };
 
       const categories = await AppDataSource.getRepository(Category).find({
         where: {
-          restaurantId: {
-            id: (menu as any).restaurantId?.id || (menu as any).restaurantId,
-          },
+          restaurantId: { id: (menu as any).restaurant?.id },
           tenantId: { id: tenantId },
           isDeleted: false,
         },
         order: { createdAt: 'DESC' },
       });
+      const globalModifiers = await AppDataSource.getRepository(
+        'Modifier',
+      ).find({
+        where: {
+          restaurant: { id: (menu as any).restaurant?.id },
+          isGlobal: true,
+        },
+        order: { createdAt: 'DESC' },
+      } as any);
 
-      const categoryMap = new Map(
-        categories.map((c: any) => [c.id, { id: c.id, name: c.name }]),
-      );
       const enrichedItems = processedMenu.menuItems?.map((item: any) => ({
         ...item,
-        category: item.categoryId ? categoryMap.get(item.categoryId) : null,
+        category: item.category || null,
       }));
       return {
         status: 200,
-        data: { ...processedMenu, categories, menuItems: enrichedItems },
+        data: {
+          ...processedMenu,
+          categories,
+          menuItems: enrichedItems,
+          globalModifiers,
+        },
       };
     } catch (error: any) {
       return { status: 500, error: error.message };

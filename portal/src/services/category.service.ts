@@ -114,6 +114,7 @@ export class CategoryService {
 
       const [categories, total] = await this.categoryRepo.findAndCount({
         where,
+        relations: ['restaurantId', 'tenantId'],
         take: limit,
         skip: (page - 1) * limit,
         order: { createdAt: 'DESC' },

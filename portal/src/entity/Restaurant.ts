@@ -21,6 +21,7 @@ import {
 import { Tenant } from './Tenant';
 import { User } from './User';
 import { Table } from './Table';
+import { MenuItem } from './MenuItem';
 
 export enum RestaurantType {
   FINE_DINING = 'Fine Dining',
@@ -171,4 +172,8 @@ export class Restaurant {
   @OneToMany(() => Table, (table) => table.restaurant)
   @IsOptional()
   tables?: Table[];
+
+  @OneToMany(() => MenuItem, (item) => item.restaurant)
+  @IsOptional()
+  menuItems?: MenuItem[];
 }

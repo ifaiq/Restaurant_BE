@@ -4,19 +4,13 @@ import {
   Column,
   ManyToOne,
   JoinColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
   DeleteDateColumn,
 } from 'typeorm';
-import {
-  IsBoolean,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-  MaxLength,
-  IsEnum,
-} from 'class-validator';
 import { Restaurant } from './Restaurant';
-import { User } from './User';
 import { Tenant } from './Tenant';
+import { User } from './User';
 
 export enum MenuStatus {
   ACTIVE = 'Active',
@@ -25,140 +19,52 @@ export enum MenuStatus {
   ARCHIVED = 'Archived',
 }
 
-export enum MenuType {
-  MAIN = 'Main Menu',
-  BREAKFAST = 'Breakfast',
-  LUNCH = 'Lunch',
-  DINNER = 'Dinner',
-  DESSERT = 'Dessert',
-  BEVERAGE = 'Beverage',
-  WINE = 'Wine',
-  COCKTAIL = 'Cocktail',
-  KIDS = 'Kids Menu',
-  VEGETARIAN = 'Vegetarian',
-  VEGAN = 'Vegan',
-  SEASONAL = 'Seasonal',
-  SPECIAL = 'Special',
-}
-
 @Entity()
 export class Menu {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ nullable: true })
-  @IsNotEmpty({ message: 'Menu name is required' })
-  @IsString({ message: 'Menu name must be a string' })
-  @MaxLength(100, { message: 'Menu name must not exceed 100 characters' })
+  @Column({ length: 100 })
   menuName!: string;
 
-  @Column({ nullable: true })
-  @IsOptional()
-  @IsString({ message: 'Description must be a string' })
-  @MaxLength(500, { message: 'Description must not exceed 500 characters' })
-  description!: string;
+  @Column({ type: 'text', nullable: true })
+  description?: string;
 
-  @ManyToOne(() => Restaurant)
+  @ManyToOne(() => Restaurant, { nullable: false })
   @JoinColumn({ name: 'restaurantId' })
-  @IsNotEmpty({ message: 'Restaurant ID is required' })
-  restaurantId!: Restaurant;
+  restaurant!: Restaurant;
 
-  @Column({ type: 'enum', enum: MenuType, default: MenuType.MAIN })
-  @IsOptional()
-  @IsEnum(MenuType, { message: 'Invalid menu type' })
-  menuType?: MenuType;
-
-  @Column({
-    type: 'enum',
-    enum: MenuStatus,
-    default: MenuStatus.ACTIVE,
-  })
-  @IsOptional()
-  @IsEnum(MenuStatus, { message: 'Invalid menu status' })
-  status?: MenuStatus;
+  @Column({ type: 'enum', enum: MenuStatus, default: MenuStatus.ACTIVE })
+  status!: MenuStatus;
 
   @Column({ nullable: true })
-  @IsOptional()
-  @IsString({ message: 'Language must be a string' })
-  language!: string;
+  language?: string;
 
-  @Column({ nullable: true })
-  @IsOptional()
-  @IsString({ message: 'Currency must be a string' })
-  @MaxLength(3, { message: 'Currency must not exceed 3 characters' })
-  currency!: string;
-
-  @Column({ type: 'jsonb', nullable: true })
-  @IsOptional()
-  menuItems?: Array<{
-    id?: string;
-    itemName: string;
-    picture?: string;
-    description?: string;
-    price: number;
-    itemType?: string;
-    status?: string;
-    categoryId?: string; // references Category.id
-    imageUrl?: string;
-    allergens?: string;
-    ingredients?: string;
-    preparationTime?: number;
-    calories?: number;
-    isVegetarian?: boolean;
-    isVegan?: boolean;
-    isGlutenFree?: boolean;
-    isSpicy?: boolean;
-    nutritionalInfo?: Record<string, any>;
-    customizations?: Record<string, any>;
-    availableModifiers?: string[]; // Array of modifier IDs that apply to this item
-    isActive?: boolean;
-  }>;
-
-  @Column({ type: 'jsonb', nullable: true })
-  @IsOptional()
-  modifiers?: Array<{
-    id?: string;
-    name: string;
-    price?: number;
-    picture?: string;
-    description?: string;
-    isActive?: boolean;
-    isRequired?: boolean;
-  }>;
-
-  @Column({ default: true })
-  @IsBoolean({ message: 'isActive must be a boolean value' })
-  isActive?: boolean;
-
-  @Column({ default: false })
-  @IsBoolean({ message: 'isDeleted must be a boolean value' })
-  isDeleted?: boolean;
-
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
-  createdAt?: Date;
-
-  @Column({ type: 'timestamp', nullable: true })
-  updatedAt?: Date;
-
-  @DeleteDateColumn()
-  deletedAt?: Date;
+  @Column({ nullable: true, length: 3 })
+  currency?: string;
 
   @ManyToOne(() => Tenant)
   @JoinColumn({ name: 'tenantId' })
-  tenantId!: Tenant;
-
-  @ManyToOne(() => User)
-  @JoinColumn({ name: 'deletedBy' })
-  @IsOptional()
-  deletedBy?: User;
+  tenant!: Tenant;
 
   @ManyToOne(() => User)
   @JoinColumn({ name: 'createdBy' })
-  @IsOptional()
   createdBy?: User;
 
   @ManyToOne(() => User)
   @JoinColumn({ name: 'updatedBy' })
-  @IsOptional()
   updatedBy?: User;
+
+  @ManyToOne(() => User)
+  @JoinColumn({ name: 'deletedBy' })
+  deletedBy?: User;
+
+  @CreateDateColumn()
+  createdAt!: Date;
+
+  @UpdateDateColumn()
+  updatedAt!: Date;
+
+  @DeleteDateColumn()
+  deletedAt?: Date;
 }

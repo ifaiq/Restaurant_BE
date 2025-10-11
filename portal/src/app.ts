@@ -5,10 +5,12 @@ import authRouter from './routes/auth.route';
 import userRouter from './routes/users.route';
 import uploadRouter from './routes/uploadFile.route';
 import restaurantRouter from './routes/restaurant.route';
-import menuRouter from './routes/menu.route';
+//import menuRouter from './routes/menu.route';
 import orderRouter from './routes/order.route';
 import helmet from 'helmet';
 import tableRouter from './routes/table.route';
+import modifierRouter from './routes/modifier.route';
+import menuItemRouter from './routes/menuItem.route';
 import categoryRouter from './routes/category.route';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -29,7 +31,7 @@ app.disable('x-powered-by');
 const allowedExact = [
   'http://localhost:3000',
   'http://localhost:5173',
-  'http://localhost:3005',
+  'http://localhost:3001',
 ];
 
 function isAllowedOrigin(origin: string | URL) {
@@ -87,11 +89,13 @@ app.use(morgan('dev'));
 
 app.use('/api/auth', authRouter);
 app.use('/api/restaurant', restaurantRouter);
-app.use('/api/menu', menuRouter);
+// app.use('/api/menu', menuRouter);
 app.use('/api/users', userRouter);
 app.use('/api/upload', uploadRouter);
 app.use('/api/order', orderRouter);
 app.use('/api/table', tableRouter);
+app.use('/api/modifier', modifierRouter);
+app.use('/api/menu-item', menuItemRouter);
 app.use('/api/category', categoryRouter);
 app.get('/', (req: Request, res: Response) => {
   res.status(404).send('Nobody’s home.💀');

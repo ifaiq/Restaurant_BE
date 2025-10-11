@@ -9,6 +9,9 @@ import { Menu } from '../entity/Menu';
 import { Table } from '../entity/Table';
 import { Order } from '../entity/Order';
 import { Category } from '../entity/Category';
+import { MenuItem } from '../entity/MenuItem';
+import { Modifier } from '../entity/Modifiers';
+import { MenuItemModifier } from '../entity/MenuItemModifier';
 
 export const AppDataSource = new DataSource({
   type: 'postgres',
@@ -17,7 +20,18 @@ export const AppDataSource = new DataSource({
   username: process.env.POSTGRES_USER,
   password: process.env.POSTGRES_PASSWORD,
   database: process.env.POSTGRES_NAME,
-  entities: [User, Tenant, Restaurant, Menu, Table, Order, Category],
+  entities: [
+    User,
+    Tenant,
+    Restaurant,
+    Menu,
+    Table,
+    Order,
+    Category,
+    MenuItem,
+    Modifier,
+    MenuItemModifier,
+  ],
   synchronize: true,
 });
 
