@@ -20,12 +20,17 @@ router.post('/create', async (req, res) => {
   await createOrder(req, res);
 });
 
-// Get order by ID
-router.get('/:id/:restaurantId', async (req, res) => {
-  await getOrder(req, res);
+// Get orders by restaurant (specific before generic)
+router.get('/restaurant/:restaurantId', verifyToken, async (req, res) => {
+  await getOrdersByRestaurant(req, res);
 });
 
-// Get order by order number
+// Get orders by table (specific before generic)
+router.get('/table/:tableId', verifyToken, async (req, res) => {
+  await getOrdersByTable(req, res);
+});
+
+// Get order by order number (specific before generic)
 router.get('/number/:orderNumber', verifyToken, async (req, res) => {
   await getOrderByNumber(req, res);
 });
@@ -35,14 +40,9 @@ router.get('/', verifyToken, async (req, res) => {
   await getAllOrders(req, res);
 });
 
-// Get orders by restaurant
-router.get('/restaurant/:restaurantId', verifyToken, async (req, res) => {
-  await getOrdersByRestaurant(req, res);
-});
-
-// Get orders by table
-router.get('/table/:tableId', verifyToken, async (req, res) => {
-  await getOrdersByTable(req, res);
+// Get order by ID (generic last)
+router.get('/:id/:restaurantId', async (req, res) => {
+  await getOrder(req, res);
 });
 
 // Update order

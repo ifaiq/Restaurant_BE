@@ -29,8 +29,9 @@ export class OrderService {
       console.log(req.body);
       const restaurant = await AppDataSource.getRepository(
         'Restaurant',
-      ).findOneBy({
-        id: restaurantId,
+      ).findOne({
+        where: { id: restaurantId },
+        relations: ['tenantId'],
       });
 
       if (!restaurant) {
@@ -42,9 +43,9 @@ export class OrderService {
 
       let table = null;
       if (tableId) {
-        table = await AppDataSource.getRepository('Table').findOneBy({
-          id: tableId,
-          restaurant: { id: restaurantId },
+        table = await AppDataSource.getRepository('Table').findOne({
+          where: { id: tableId, restaurant: { id: restaurantId } },
+          relations: ['tenantId'],
         });
 
         if (!table) {
@@ -94,7 +95,7 @@ export class OrderService {
       const totalAmount = subtotal;
 
       const orderNumber = this.generateOrderNumber();
-
+      console.log(restaurant);
       let order = this.orderRepo.create({
         orderNumber,
         restaurant,
@@ -106,7 +107,7 @@ export class OrderService {
         totalAmount,
         items,
         specialInstructions,
-        tenantId: restaurant?.tenantId,
+        tenantId: restaurant?.tenantId?.id,
       });
 
       order = await this.orderRepo.save(order);
@@ -129,8 +130,9 @@ export class OrderService {
       const { id, restaurantId } = req.params;
       const restaurant = await AppDataSource.getRepository(
         'Restaurant',
-      ).findOneBy({
-        id: restaurantId,
+      ).findOne({
+        where: { id: restaurantId },
+        relations: ['tenantId'],
       });
       if (!restaurant) {
         return { status: 400, message: 'Restaurant not found!' };
@@ -156,9 +158,9 @@ export class OrderService {
     try {
       const { orderNumber } = req.params;
       const tenantId = req?.tenantId;
-      const order = await this.orderRepo.findOneBy({
-        orderNumber,
-        tenantId,
+      const order = await this.orderRepo.findOne({
+        where: { orderNumber, tenantId: { id: tenantId } },
+        relations: ['tenantId'],
       });
       if (!order) {
         return { status: 400, message: 'Order not found!' };
@@ -240,13 +242,12 @@ export class OrderService {
       const tenantId = req?.tenantId;
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 10;
-
       // Verify restaurant exists
       const restaurant = await AppDataSource.getRepository(
         'Restaurant',
-      ).findOneBy({
-        id: restaurantId,
-        tenantId,
+      ).findOne({
+        where: { id: restaurantId, tenantId: { id: tenantId } },
+        relations: ['tenantId'],
       });
 
       if (!restaurant) {
@@ -255,7 +256,7 @@ export class OrderService {
 
       const [orders, total] = await this.orderRepo.findAndCount({
         where: {
-          restaurant: { id: restaurantId },
+          restaurant: { id: restaurantId, tenantId: { id: tenantId } },
           tenantId: { id: tenantId },
         },
         take: limit,
@@ -273,10 +274,6 @@ export class OrderService {
           totalItems: total,
           totalPages,
           currentPage: page,
-          restaurant: {
-            id: restaurant.id,
-            name: restaurant.restaurantName,
-          },
         },
       };
     } catch (error: any) {
@@ -292,9 +289,9 @@ export class OrderService {
       const limit = parseInt(req.query.limit as string) || 10;
 
       // Verify table exists
-      const table = await AppDataSource.getRepository('Table').findOneBy({
-        id: tableId,
-        tenantId,
+      const table = await AppDataSource.getRepository('Table').findOne({
+        where: { id: tableId, tenantId: { id: tenantId } },
+        relations: ['tenantId'],
       });
 
       if (!table) {
@@ -303,7 +300,7 @@ export class OrderService {
 
       const [orders, total] = await this.orderRepo.findAndCount({
         where: {
-          table: { id: tableId },
+          table: { id: tableId, tenantId: { id: tenantId } },
           tenantId: { id: tenantId },
         },
         take: limit,
@@ -344,9 +341,9 @@ export class OrderService {
       } = req.body;
       const tenantId = req?.tenantId;
 
-      let order = await this.orderRepo.findOneBy({
-        id: id,
-        tenantId,
+      let order = await this.orderRepo.findOne({
+        where: { id: id, tenantId: { id: tenantId } },
+        relations: ['tenantId'],
       });
 
       if (!order) {
@@ -404,9 +401,9 @@ export class OrderService {
       const { status } = req.body;
       const tenantId = req?.tenantId;
 
-      let order = await this.orderRepo.findOneBy({
-        id: id,
-        tenantId,
+      let order = await this.orderRepo.findOne({
+        where: { id: id, tenantId: { id: tenantId } },
+        relations: ['tenantId'],
       });
 
       if (!order) {
@@ -463,9 +460,9 @@ export class OrderService {
     try {
       const { id } = req.params;
       const tenantId = req?.tenantId;
-      const order = await this.orderRepo.findOneBy({
-        id: id,
-        tenantId,
+      const order = await this.orderRepo.findOne({
+        where: { id: id, tenantId: { id: tenantId } },
+        relations: ['tenantId'],
       });
 
       if (!order) {

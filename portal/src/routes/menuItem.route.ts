@@ -6,7 +6,7 @@ import {
   getAllMenuItems,
   getAllRestaurantMenuItems,
 } from '../controllers/menuItem.controller';
-import { verifyTokenAndOwner } from '../middlewares/verification';
+import { verifyToken, verifyTokenAndOwner } from '../middlewares/verification';
 
 const router = Router();
 
@@ -14,7 +14,7 @@ router.post('/create', verifyTokenAndOwner, async (req, res) => {
   await createMenuItem(req, res);
 });
 
-router.get('/', async (req, res) => {
+router.get('/', verifyToken, async (req, res) => {
   await getAllMenuItems(req, res);
 });
 

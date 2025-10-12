@@ -129,6 +129,24 @@ export class MenuItemService {
         modifierIds,
       } = req.body;
       console.log(req.body);
+      if (!restaurantId) {
+        return {
+          status: 400,
+          message: 'Restaurant ID is required',
+        };
+      }
+      if (categoryId) {
+        return {
+          status: 400,
+          message: 'Category ID is required',
+        };
+      }
+      if (tenantId) {
+        return {
+          status: 400,
+          message: 'Tenant ID is required',
+        };
+      }
       // Validate restaurant belongs to tenant via any menu lookup or direct repository
       const restaurant = await AppDataSource.getRepository(
         'Restaurant',
