@@ -51,12 +51,12 @@ router.put('/:id', verifyToken, async (req, res) => {
 });
 
 // Update order status
-router.patch('/:id/status', verifyToken, async (req, res) => {
+router.put('/status/:id', verifyToken, async (req, res) => {
   await updateOrderStatus(req, res);
 });
 
 // Update payment status
-router.patch('/:id/payment', verifyToken, async (req, res) => {
+router.put('/:id/payment', verifyToken, async (req, res) => {
   await updatePaymentStatus(req, res);
 });
 
