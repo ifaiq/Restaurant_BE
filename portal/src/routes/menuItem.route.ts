@@ -3,6 +3,8 @@ import {
   createMenuItem,
   updateMenuItem,
   deleteMenuItem,
+  getAllMenuItems,
+  getAllRestaurantMenuItems,
 } from '../controllers/menuItem.controller';
 import { verifyTokenAndOwner } from '../middlewares/verification';
 
@@ -10,6 +12,14 @@ const router = Router();
 
 router.post('/create', verifyTokenAndOwner, async (req, res) => {
   await createMenuItem(req, res);
+});
+
+router.get('/', async (req, res) => {
+  await getAllMenuItems(req, res);
+});
+
+router.get('/restaurant/:restaurantId/:tableId', async (req, res) => {
+  await getAllRestaurantMenuItems(req, res);
 });
 
 router.put('/:id', verifyTokenAndOwner, async (req, res) => {

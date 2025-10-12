@@ -3,6 +3,7 @@ import { apiResponse } from '../types/res';
 import dotenv from 'dotenv';
 dotenv.config({ path: '../.env' });
 import { AppDataSource } from '../config/database';
+import { ILike } from 'typeorm';
 import { Menu } from '../entity/Menu';
 import { MenuItem } from '../entity/MenuItem';
 import { MenuItemModifier } from '../entity/MenuItemModifier';
@@ -13,6 +14,100 @@ export class MenuItemService {
   private static menuRepo = AppDataSource.getRepository(Menu);
   private static itemRepo = AppDataSource.getRepository(MenuItem);
   private static itemModRepo = AppDataSource.getRepository(MenuItemModifier);
+
+  static async getAll(req: Request | any): Promise<apiResponse> {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+      const tenantId = req?.tenantId;
+      const search = (req.query.search as string) || '';
+      const restaurantId = req.query.restaurantId as string;
+      const categoryId = req.query.categoryId as string;
+      const isActive = req.query.isActive as string;
+
+      const where: any = {
+        restaurant: { tenantId: { id: tenantId } },
+      };
+      if (restaurantId) where.restaurant.id = restaurantId;
+      if (categoryId) where.category = { id: categoryId };
+      if (search) where.itemName = ILike(`%${search}%`);
+      if (isActive === 'true' || isActive === 'false')
+        where.isActive = isActive === 'true';
+
+      const [items, total] = await this.itemRepo.findAndCount({
+        where,
+        relations: ['category', 'restaurant'],
+        take: limit,
+        skip: (page - 1) * limit,
+        order: { createdAt: 'DESC' },
+      });
+
+      return {
+        status: 200,
+        data: items,
+        meta: {
+          totalItems: total,
+          totalPages: Math.ceil(total / limit),
+          currentPage: page,
+        },
+      };
+    } catch (error: any) {
+      return { status: 500, error: error.message };
+    }
+  }
+
+  static async getAllRestaurantMenuItems(
+    req: Request | any,
+  ): Promise<apiResponse> {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+      const search = (req.query.search as string) || '';
+      const restaurantId = req.params.restaurantId as string;
+      const tableId = req.params.tableId as string;
+      const categoryId = req.query.categoryId as string;
+      const isActive = req.query.isActive as string;
+      if (!restaurantId) {
+        return {
+          status: 400,
+          message: 'Restaurant ID is required',
+        };
+      }
+      if (!tableId) {
+        return {
+          status: 400,
+          message: 'Table ID is required',
+        };
+      }
+      const where: any = {
+        restaurant: { id: restaurantId },
+      };
+      if (categoryId) where.category = { id: categoryId };
+      if (search) where.itemName = ILike(`%${search}%`);
+      if (isActive === 'true' || isActive === 'false')
+        where.isActive = isActive === 'true';
+
+      const [items, total] = await this.itemRepo.findAndCount({
+        where,
+        relations: ['category', 'restaurant'],
+        take: limit,
+        skip: (page - 1) * limit,
+        order: { createdAt: 'DESC' },
+      });
+
+      return {
+        status: 200,
+        data: items,
+        meta: {
+          totalItems: total,
+          totalPages: Math.ceil(total / limit),
+          currentPage: page,
+        },
+      };
+    } catch (error: any) {
+      return { status: 500, error: error.message };
+    }
+  }
 
   static async create(req: Request | any): Promise<apiResponse> {
     try {
@@ -33,7 +128,7 @@ export class MenuItemService {
         customizations,
         modifierIds,
       } = req.body;
-
+      console.log(req.body);
       // Validate restaurant belongs to tenant via any menu lookup or direct repository
       const restaurant = await AppDataSource.getRepository(
         'Restaurant',

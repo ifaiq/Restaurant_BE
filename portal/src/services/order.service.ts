@@ -21,23 +21,12 @@ export class OrderService {
     try {
       const {
         restaurantId,
-        menuId,
         tableId,
         items,
         specialInstructions,
         paymentMethod,
       } = req.body;
-      const menuData = await AppDataSource.getRepository('Menu').findOneBy({
-        id: menuId,
-        restaurantId: { id: restaurantId },
-      });
-      if (!menuData) {
-        return {
-          status: 400,
-          message: 'Menu not found!',
-        };
-      }
-
+      console.log(req.body);
       const restaurant = await AppDataSource.getRepository(
         'Restaurant',
       ).findOneBy({
@@ -65,11 +54,28 @@ export class OrderService {
           };
         }
       }
-      if (restaurant?.tenantId?.id !== menuData?.tenantId?.id) {
-        return {
-          status: 400,
-          message: 'Restaurant and menu do not belong to the same tenant!',
-        };
+      // Validate each menu item belongs to the same restaurant
+      for (const item of items || []) {
+        if (!item?.id) {
+          return {
+            status: 400,
+            message: 'menuItem Id is required for each item',
+          };
+        }
+        const menuItem = await AppDataSource.getRepository('MenuItem').findOne({
+          where: { id: item?.id },
+          relations: ['restaurant'],
+        } as any);
+        if (!menuItem || (menuItem as any)?.restaurant?.id !== restaurantId) {
+          return {
+            status: 400,
+            message: 'One or more items do not belong to this restaurant',
+          };
+        }
+        // Default unitPrice from menu item if not provided
+        if (item.unitPrice == null) {
+          item.unitPrice = (menuItem as any).price;
+        }
       }
       let subtotal = 0;
       items.forEach((item: any) => {

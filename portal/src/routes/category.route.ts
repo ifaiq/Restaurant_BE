@@ -6,11 +6,7 @@ import {
   updateCategory,
   deleteCategory,
 } from '../controllers/category.controller';
-import {
-  verifyToken,
-  verifyTokenAndAdmin,
-  verifyTokenAndOwner,
-} from '../middlewares/verification';
+import { verifyToken, verifyTokenAndOwner } from '../middlewares/verification';
 
 const router = Router();
 
@@ -26,11 +22,11 @@ router.get('/', verifyToken, async (req, res) => {
   await getAllCategories(req, res);
 });
 
-router.put('/:id', verifyTokenAndAdmin, async (req, res) => {
+router.put('/:id', verifyTokenAndOwner, async (req, res) => {
   await updateCategory(req, res);
 });
 
-router.delete('/:id', verifyTokenAndAdmin, async (req, res) => {
+router.delete('/:id', verifyTokenAndOwner, async (req, res) => {
   await deleteCategory(req, res);
 });
 
