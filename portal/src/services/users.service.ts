@@ -5,7 +5,7 @@ dotenv.config({ path: '../.env' });
 import { RoleName, User } from '../entity/User';
 import * as bcrypt from 'bcrypt';
 import { AppDataSource } from '../config/database';
-import { Between, ILike, In } from 'typeorm';
+import { Between, ILike } from 'typeorm';
 //import { loginInfoEmailTemplate } from '../helper/mailTemplate';
 import { MongoClient } from 'mongodb';
 // import { EmailQueueProducer } from '../queues/producer/emailQueue.producer';
@@ -13,10 +13,12 @@ import { MongoClient } from 'mongodb';
 export class UserService {
   private static userRepo = AppDataSource.getRepository(User);
   // private static emailQueueProducer = new EmailQueueProducer();
-  static async createUser(req: Request | any): Promise<apiResponse> {
+  static async createUser(
+    req: Request | any,
+    roleName: RoleName,
+  ): Promise<apiResponse> {
     try {
-      const { email, name, country, roleName, restaurantId, password } =
-        req.body;
+      const { email, name, country, restaurantId, password } = req.body;
 
       let tenantId;
       if (restaurantId) {
@@ -47,7 +49,6 @@ export class UserService {
       newUser.password = hashedPassword;
       newUser.name = name;
       newUser.country = country;
-      newUser.isActive = true;
       newUser.roleName = roleName;
       newUser.tenantId = tenantId;
       newUser.restaurantId = restaurantId;
@@ -169,42 +170,20 @@ export class UserService {
     }
   }
 
-  static async getAllUsers(
-    req: Request | any,
-    type: string,
-  ): Promise<apiResponse> {
+  static async getAllUsers(req: Request | any): Promise<apiResponse> {
     try {
-      const userTypeCondition =
-        type === RoleName.OWNER
-          ? [RoleName.OWNER, RoleName.STAFF]
-          : [RoleName.STAFF];
       const tenantId = req?.tenantId;
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 10;
       const search = req.query.search ? req.query.search.toString() : null;
-      const departmentId = req.query.departmentId
-        ? req.query.departmentId
-        : null;
-      const roleName = req.query?.roleName;
       const status = req.query.status;
 
       const baseCondition: any = {
-        roleName: In(userTypeCondition),
         tenantId: { id: tenantId },
         isDeleted: false,
       };
       if (search) {
         baseCondition['name'] = ILike(`%${search}%`);
-      }
-      if (roleName) {
-        baseCondition['roleName'] = roleName;
-      }
-
-      if (departmentId) {
-        baseCondition['department'] = {
-          id: departmentId,
-          tenantId: { id: tenantId },
-        };
       }
 
       if (status) {

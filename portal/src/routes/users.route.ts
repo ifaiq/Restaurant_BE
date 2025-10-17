@@ -4,7 +4,8 @@ import {
   getUserById,
   deleteUser,
   updateUser,
-  createUser,
+  createOwner,
+  createStaff,
   getAllStaff,
   getUserAnalytics,
   getAdminAnalytics,
@@ -71,8 +72,11 @@ router.put(
 //   },
 // );
 
-router.post('/createUser', verifyTokenAndAdmin, async (req, res) => {
-  await createUser(req, res);
+router.post('/createOwner', verifyTokenAndAdmin, async (req, res) => {
+  await createOwner(req, res);
+});
+router.post('/createStaff', verifyTokenAndAdmin, async (req, res) => {
+  await createStaff(req, res);
 });
 router.delete(
   '/delete/:id',
