@@ -134,13 +134,13 @@ export class MenuItemService {
           message: 'Restaurant ID is required',
         };
       }
-      if (categoryId) {
+      if (!categoryId) {
         return {
           status: 400,
           message: 'Category ID is required',
         };
       }
-      if (tenantId) {
+      if (!tenantId) {
         return {
           status: 400,
           message: 'Tenant ID is required',

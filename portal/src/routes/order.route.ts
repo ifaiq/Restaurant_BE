@@ -10,6 +10,7 @@ import {
   updateOrderStatus,
   updatePaymentStatus,
   deleteOrder,
+  subscribeToOrderUpdates,
 } from '../controllers/order.controller';
 import { verifyToken, verifyTokenAndAdmin } from '../middlewares/verification';
 
@@ -33,6 +34,11 @@ router.get('/table/:tableId', verifyToken, async (req, res) => {
 // Get order by order number (specific before generic)
 router.get('/number/:orderNumber', verifyToken, async (req, res) => {
   await getOrderByNumber(req, res);
+});
+
+// SSE endpoint for real-time order updates
+router.get('/events', verifyToken, async (req, res) => {
+  await subscribeToOrderUpdates(req, res);
 });
 
 // Get all orders

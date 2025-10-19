@@ -6,6 +6,7 @@ import { Order, OrderStatus, PaymentStatus } from '../entity/Order';
 import { AppDataSource } from '../config/database';
 import { User } from '../entity/User';
 import { ILike, Between } from 'typeorm';
+import { SSEManager, SSEEvent } from '../utils/sse';
 
 export class OrderService {
   private static orderRepo = AppDataSource.getRepository(Order);
@@ -15,6 +16,32 @@ export class OrderService {
     const timestamp = Date.now().toString(36);
     const random = Math.random().toString(36).substr(2, 5);
     return `ORD-${timestamp}-${random}`.toUpperCase();
+  }
+
+  private static emitOrderEvent(
+    type: string,
+    order: Order,
+    tenantId: string,
+    restaurantId?: string,
+    tableId?: string,
+    status?: string,
+  ): void {
+    const event: SSEEvent = {
+      type,
+      data: {
+        order,
+        message: `Order ${type.toLowerCase()}: ${order.orderNumber}`,
+      },
+      timestamp: new Date(),
+      filters: {
+        tenantId,
+        restaurantId: restaurantId || order.restaurant?.id,
+        tableId: tableId || order.table?.id,
+        status: status || order.status,
+      },
+    };
+
+    SSEManager.broadcastOrderEvent(event);
   }
 
   static async createOrder(req: Request | any): Promise<apiResponse> {
@@ -111,6 +138,23 @@ export class OrderService {
       order = await this.orderRepo.save(order);
       if (!order) {
         return { status: 400, message: 'Unable to create order' };
+      }
+
+      // Load order with relations for SSE event
+      const orderWithRelations = await this.orderRepo.findOne({
+        where: { id: order.id },
+        relations: ['restaurant', 'table', 'tenantId'],
+      });
+
+      if (orderWithRelations && restaurant?.tenantId?.id) {
+        this.emitOrderEvent(
+          'ORDER_CREATED',
+          orderWithRelations,
+          restaurant.tenantId.id,
+          restaurantId,
+          tableId,
+          OrderStatus.PENDING,
+        );
       }
 
       return {
@@ -341,7 +385,7 @@ export class OrderService {
 
       let order = await this.orderRepo.findOne({
         where: { id: id, tenantId: { id: tenantId } },
-        relations: ['tenantId'],
+        relations: ['tenantId', 'restaurant', 'table'],
       });
 
       if (!order) {
@@ -383,6 +427,16 @@ export class OrderService {
 
       order = await this.orderRepo.save(order);
 
+      // Emit SSE event for order update
+      this.emitOrderEvent(
+        'ORDER_UPDATED',
+        order,
+        tenantId,
+        order.restaurant?.id,
+        order.table?.id,
+        order.status,
+      );
+
       return {
         status: 200,
         message: 'Order updated successfully!',
@@ -401,7 +455,7 @@ export class OrderService {
 
       let order = await this.orderRepo.findOne({
         where: { id: id, tenantId: { id: tenantId } },
-        relations: ['tenantId'],
+        relations: ['tenantId', 'restaurant', 'table'],
       });
 
       if (!order) {
@@ -411,6 +465,16 @@ export class OrderService {
       order.status = status;
 
       order = await this.orderRepo.save(order);
+
+      // Emit SSE event for status update
+      this.emitOrderEvent(
+        'ORDER_STATUS_UPDATED',
+        order,
+        tenantId,
+        order.restaurant?.id,
+        order.table?.id,
+        status,
+      );
 
       return {
         status: 200,
@@ -428,9 +492,9 @@ export class OrderService {
       const { paymentStatus, paymentMethod } = req.body;
       const tenantId = req?.tenantId;
 
-      let order = await this.orderRepo.findOneBy({
-        id: id,
-        tenantId,
+      let order = await this.orderRepo.findOne({
+        where: { id: id, tenantId: { id: tenantId } },
+        relations: ['tenantId', 'restaurant', 'table'],
       });
 
       if (!order) {
@@ -443,6 +507,16 @@ export class OrderService {
       }
 
       order = await this.orderRepo.save(order);
+
+      // Emit SSE event for payment status update
+      this.emitOrderEvent(
+        'ORDER_PAYMENT_UPDATED',
+        order,
+        tenantId,
+        order.restaurant?.id,
+        order.table?.id,
+        order.status,
+      );
 
       return {
         status: 200,
@@ -460,7 +534,7 @@ export class OrderService {
       const tenantId = req?.tenantId;
       const order = await this.orderRepo.findOne({
         where: { id: id, tenantId: { id: tenantId } },
-        relations: ['tenantId'],
+        relations: ['tenantId', 'restaurant', 'table'],
       });
 
       if (!order) {
@@ -477,6 +551,16 @@ export class OrderService {
           message: 'Only pending or cancelled orders can be deleted!',
         };
       }
+
+      // Emit SSE event before deletion
+      this.emitOrderEvent(
+        'ORDER_DELETED',
+        order,
+        tenantId,
+        order.restaurant?.id,
+        order.table?.id,
+        order.status,
+      );
 
       await this.orderRepo.delete({ id: id });
 

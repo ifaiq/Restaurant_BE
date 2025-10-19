@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { OrderService } from '../services/order.service';
 import { apiResponse } from '../types/res';
+import { SSEManager } from '../utils/sse';
 
 export async function createOrder(
   req: Request,
@@ -119,5 +120,45 @@ export async function deleteOrder(
     return res.status(status).send(data);
   } catch (error: any) {
     return res.status(500).send({ error: error.message });
+  }
+}
+
+// SSE endpoint for real-time order updates
+export async function subscribeToOrderUpdates(
+  req: Request | any,
+  res: Response,
+): Promise<void> {
+  try {
+    const { restaurantId, status, tableId } = req.query;
+    const user = req.user;
+
+    const filters = {
+      ...(status && { status }),
+      ...(restaurantId && { restaurantId }),
+      ...(tableId && { tableId }),
+    };
+
+    // Add this connection to the SSE manager
+    const connectionId = SSEManager.addConnection(
+      res,
+      user,
+      restaurantId,
+      filters,
+    );
+
+    console.log(
+      `SSE connection established for user ${user?.id} - connection: ${connectionId}`,
+    );
+
+    // Set a timeout to prevent hanging connections (optional)
+    setTimeout(
+      () => {
+        SSEManager.removeConnection(connectionId);
+      },
+      24 * 60 * 60 * 1000,
+    ); // 24 hours
+  } catch (error: any) {
+    console.error('SSE subscription error:', error);
+    res.status(500).end();
   }
 }

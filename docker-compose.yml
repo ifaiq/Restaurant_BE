@@ -1,23 +1,23 @@
 services:
 
   # Node.js (Express) service
-  dev_portal:
-    container_name: restaurant_service
-    env_file:
-      - .env
-    build:
-      context: ./portal
-      dockerfile: Dockerfile
-    restart: always
-    depends_on:
-      - postgres
-    ports:
-      - ${PORTAL_PORT}:${PORTAL_PORT}
-    networks:
-      - res-network
-    volumes:
-      - ./portal:/usr/src/app
-      - /usr/src/app/node_modules
+  # dev_portal:
+  #   container_name: restaurant_service
+  #   env_file:
+  #     - .env
+  #   build:
+  #     context: ./portal
+  #     dockerfile: Dockerfile
+  #   restart: always
+  #   depends_on:
+  #     - postgres
+  #   ports:
+  #     - ${PORTAL_PORT}:${PORTAL_PORT}
+  #   networks:
+  #     - res-network
+  #   volumes:
+  #     - ./portal:/usr/src/app
+  #     - /usr/src/app/node_modules
 
   postgres:
      image: postgres:latest
