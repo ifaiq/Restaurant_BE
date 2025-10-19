@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import { UserService } from '../services/users.service';
 import { apiResponse } from '../types/res';
-import { RoleName } from '../entity/User';
 
 export async function getAllUsers(
   req: Request,
@@ -20,19 +19,31 @@ export async function getAllStaff(
   res: Response,
 ): Promise<apiResponse> {
   try {
-    const { status, ...data } = await UserService.getAllUsers(req);
+    const { status, ...data } = await UserService.getAllStaff(req);
     return res.status(status).send(data);
   } catch (error: any) {
     return res.status(500).send({ error: error.message });
   }
 }
 
-export async function getUserById(
+export async function getStaffById(
   req: Request,
   res: Response,
 ): Promise<apiResponse> {
   try {
-    const { status, ...data } = await UserService.getUserById(req);
+    const { status, ...data } = await UserService.getStaffById(req);
+    return res.status(status).send(data);
+  } catch (error: any) {
+    return res.status(500).send({ error: error.message });
+  }
+}
+
+export async function getOwnerById(
+  req: Request,
+  res: Response,
+): Promise<apiResponse> {
+  try {
+    const { status, ...data } = await UserService.getOwnerById(req);
     return res.status(status).send(data);
   } catch (error: any) {
     return res.status(500).send({ error: error.message });
@@ -56,10 +67,7 @@ export async function createOwner(
   res: Response,
 ): Promise<apiResponse> {
   try {
-    const { status, ...data } = await UserService.createUser(
-      req,
-      RoleName.OWNER,
-    );
+    const { status, ...data } = await UserService.createOwner(req);
     return res.status(status).send(data);
   } catch (error: any) {
     return res.status(500).send({ error: error.message });
@@ -71,10 +79,7 @@ export async function createStaff(
   res: Response,
 ): Promise<apiResponse> {
   try {
-    const { status, ...data } = await UserService.createUser(
-      req,
-      RoleName.STAFF,
-    );
+    const { status, ...data } = await UserService.createStaff(req);
     return res.status(status).send(data);
   } catch (error: any) {
     return res.status(500).send({ error: error.message });
@@ -92,18 +97,29 @@ export async function deleteUser(
   }
 }
 
-export async function updateUser(
+export async function updateOwner(
   req: Request,
   res: Response,
 ): Promise<apiResponse> {
   try {
-    const { status, ...data } = await UserService.updateUser(req);
+    const { status, ...data } = await UserService.updateOwner(req);
     return res.status(status).send(data);
   } catch (error: any) {
     return res.status(500).send({ error: error.message });
   }
 }
 
+export async function updateStaff(
+  req: Request,
+  res: Response,
+): Promise<apiResponse> {
+  try {
+    const { status, ...data } = await UserService.updateStaff(req);
+    return res.status(status).send(data);
+  } catch (error: any) {
+    return res.status(500).send({ error: error.message });
+  }
+}
 export async function getUserAnalytics(
   req: Request,
   res: Response,

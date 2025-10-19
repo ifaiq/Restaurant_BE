@@ -24,7 +24,6 @@ export const verifyToken = (
   try {
     const authHeader = req.headers.authorization;
     const token = extractTokenFromHeader(authHeader);
-
     if (token) {
       const user = jwt.verify(
         token,
@@ -60,7 +59,7 @@ export const verifyTokenAndOwner = (
 ): void => {
   try {
     verifyToken(req, res, () => {
-      if (req.user.isAdmin || req.user.roleName === 'OWNER') {
+      if (req.user.roleName === 'OWNER') {
         next();
       } else {
         res

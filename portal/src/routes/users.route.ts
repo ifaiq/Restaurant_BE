@@ -1,9 +1,9 @@
 import { Router } from 'express';
 import {
   getAllUsers,
-  getUserById,
   deleteUser,
-  updateUser,
+  updateOwner,
+  updateStaff,
   createOwner,
   createStaff,
   getAllStaff,
@@ -11,12 +11,18 @@ import {
   getAdminAnalytics,
   getUserProfile,
   getUserUsageAnalytics,
+  getStaffById,
+  getOwnerById,
 } from '../controllers/users.controller';
-import { verifyToken, verifyTokenAndAdmin } from '../middlewares/verification';
+import {
+  verifyToken,
+  verifyTokenAndAdmin,
+  verifyTokenAndOwner,
+} from '../middlewares/verification';
 
 const router = Router();
 
-router.get('/allUsers', verifyTokenAndAdmin, async (req, res) => {
+router.get('/allOwners', verifyTokenAndAdmin, async (req, res) => {
   await getAllUsers(req, res);
 });
 
@@ -42,12 +48,16 @@ router.get(
   },
 );
 
-router.get('/allStaff', verifyTokenAndAdmin, async (req, res) => {
+router.get('/allStaff', verifyTokenAndOwner, async (req, res) => {
   await getAllStaff(req, res);
 });
 
-router.get('/user/:id', verifyTokenAndAdmin, async (req, res) => {
-  await getUserById(req, res);
+router.get('/staff/:id', verifyTokenAndOwner, async (req, res) => {
+  await getStaffById(req, res);
+});
+
+router.get('/owner/:id', verifyTokenAndAdmin, async (req, res) => {
+  await getOwnerById(req, res);
 });
 
 router.get('/profile', verifyToken, async (req, res) => {
@@ -55,27 +65,27 @@ router.get('/profile', verifyToken, async (req, res) => {
 });
 
 router.put(
-  '/update/:id',
+  '/owner/:id',
   verifyTokenAndAdmin,
 
   async (req, res) => {
-    await updateUser(req, res);
+    await updateOwner(req, res);
   },
 );
 
-// router.put(
-//   '/status/:id',
-//   verifyTokenAndAdmin,
-//
-//   async (req, res) => {
-//     await changeUserStatus(req, res);
-//   },
-// );
+router.put(
+  '/staff/:id',
+  verifyTokenAndOwner,
+
+  async (req, res) => {
+    await updateStaff(req, res);
+  },
+);
 
 router.post('/createOwner', verifyTokenAndAdmin, async (req, res) => {
   await createOwner(req, res);
 });
-router.post('/createStaff', verifyTokenAndAdmin, async (req, res) => {
+router.post('/createStaff', verifyTokenAndOwner, async (req, res) => {
   await createStaff(req, res);
 });
 router.delete(

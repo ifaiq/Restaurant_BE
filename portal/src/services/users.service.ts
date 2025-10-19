@@ -13,32 +13,30 @@ import { MongoClient } from 'mongodb';
 export class UserService {
   private static userRepo = AppDataSource.getRepository(User);
   // private static emailQueueProducer = new EmailQueueProducer();
-  static async createUser(
-    req: Request | any,
-    roleName: RoleName,
-  ): Promise<apiResponse> {
+  static async createOwner(req: Request | any): Promise<apiResponse> {
     try {
       const { email, name, country, restaurantId, password } = req.body;
 
-      let tenantId;
-      if (restaurantId) {
-        const restaurant = await AppDataSource.getRepository(
-          'Restaurant',
-        ).findOne({
-          where: { id: restaurantId },
-          relations: ['tenantId'],
-        });
-
-        if (!restaurant) {
-          return { status: 400, message: 'Restaurant not found!' };
-        }
-
-        tenantId = restaurant.tenantId;
-      } else {
+      if (!restaurantId) {
         return { status: 400, message: 'Restaurant ID is required!' };
       }
+      const restaurant = await AppDataSource.getRepository(
+        'Restaurant',
+      ).findOne({
+        where: { id: restaurantId },
+        relations: ['tenantId'],
+      });
 
-      const existingUser = await this.userRepo.findOneBy({ email, tenantId });
+      if (!restaurant || !restaurant.tenantId || !restaurant.tenantId.id) {
+        return { status: 400, message: 'Restaurant not found!' };
+      }
+
+      const tenantId = restaurant.tenantId?.id;
+
+      const existingUser = await this.userRepo.findOneBy({
+        email,
+        tenantId: { id: tenantId },
+      });
       if (existingUser) {
         return { status: 404, message: 'User with this email already exists!' };
       }
@@ -49,7 +47,61 @@ export class UserService {
       newUser.password = hashedPassword;
       newUser.name = name;
       newUser.country = country;
-      newUser.roleName = roleName;
+      newUser.roleName = RoleName.OWNER;
+      newUser.tenantId = tenantId;
+      newUser.restaurantId = restaurantId;
+      const user = await this.userRepo.save(newUser);
+      if (!user) {
+        return { status: 400, message: 'Unable to create owner' };
+      }
+      //const passwordField = loginInfoEmailTemplate(password);
+      // await this.emailQueueProducer.addEmailJob(
+      //   email,
+      //   passwordField,
+      //   {},
+      //   'Login Details',
+      // );
+      return {
+        status: 200,
+        message: 'Owner created successfully!',
+        data: user,
+      };
+    } catch (error: any) {
+      return { status: 500, error: error.message };
+    }
+  }
+
+  static async createStaff(req: Request | any): Promise<apiResponse> {
+    try {
+      const { email, name, password, country } = req.body;
+      const restaurantId = req.user.restaurantId?.id;
+      const tenantId = req.user.tenantId?.id;
+
+      const restaurant = await AppDataSource.getRepository(
+        'Restaurant',
+      ).findOne({
+        where: { id: restaurantId, tenantId: { id: tenantId } },
+        relations: ['tenantId'],
+      });
+      if (!restaurant || !restaurant.tenantId || !restaurant.tenantId.id) {
+        return { status: 400, message: 'Restaurant not found!' };
+      }
+
+      const existingUser = await this.userRepo.findOneBy({
+        email,
+        tenantId: { id: tenantId },
+      });
+      if (existingUser) {
+        return { status: 404, message: 'User with this email already exists!' };
+      }
+
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const newUser = new User();
+      newUser.email = email;
+      newUser.password = hashedPassword;
+      newUser.name = name;
+      newUser.country = country;
+      newUser.roleName = RoleName.STAFF;
       newUser.tenantId = tenantId;
       newUser.restaurantId = restaurantId;
       const user = await this.userRepo.save(newUser);
@@ -63,27 +115,29 @@ export class UserService {
       //   {},
       //   'Login Details',
       // );
-      return { status: 200, message: 'User created successfully!', data: user };
+      return {
+        status: 200,
+        message: 'Staff created successfully!',
+        data: user,
+      };
     } catch (error: any) {
       return { status: 500, error: error.message };
     }
   }
 
-  static async getUserById(req: Request | any): Promise<apiResponse> {
+  static async getOwnerById(req: Request | any): Promise<apiResponse> {
     try {
       const { id } = req.params;
-      const tenantId = req?.tenantId;
       const userData = await this.userRepo.findOne({
         where: {
           id: id,
           isDeleted: false,
-          tenantId: {
-            id: tenantId,
-          },
+          roleName: RoleName.OWNER,
         },
+        relations: ['tenantId', 'restaurantId'],
       });
       if (!userData) {
-        return { status: 400, message: 'User not found!' };
+        return { status: 400, message: 'Owner not found!' };
       }
       return { status: 200, data: userData };
     } catch (error: any) {
@@ -91,6 +145,29 @@ export class UserService {
     }
   }
 
+  static async getStaffById(req: Request | any): Promise<apiResponse> {
+    try {
+      const { id } = req.params;
+      const tenantId = req?.tenantId;
+      const userData = await this.userRepo.findOne({
+        where: {
+          id: id,
+          isDeleted: false,
+          roleName: RoleName.STAFF,
+          tenantId: {
+            id: tenantId,
+          },
+        },
+        relations: ['tenantId', 'restaurantId'],
+      });
+      if (!userData) {
+        return { status: 400, message: 'Staff not found!' };
+      }
+      return { status: 200, data: userData };
+    } catch (error: any) {
+      return { status: 500, error: error.message };
+    }
+  }
   static async getUserProfile(req: Request | any): Promise<apiResponse> {
     try {
       const { id } = req.user;
@@ -103,6 +180,7 @@ export class UserService {
             id: tenantId,
           },
         },
+        relations: ['tenantId', 'restaurantId'],
       });
       if (!userData) {
         return { status: 400, message: 'User not found!' };
@@ -137,7 +215,7 @@ export class UserService {
     }
   }
 
-  static async updateUser(req: Request | any): Promise<apiResponse> {
+  static async updateStaff(req: Request | any): Promise<apiResponse> {
     try {
       const { id } = req.params;
       const tenantId = req?.tenantId;
@@ -170,17 +248,47 @@ export class UserService {
     }
   }
 
+  static async updateOwner(req: Request | any): Promise<apiResponse> {
+    try {
+      const { id } = req.params;
+
+      const { country, name, email, restaurantId } = req.body;
+      let userData = await this.userRepo.findOne({
+        where: {
+          id: id,
+          isDeleted: false,
+        },
+      });
+      if (!userData) {
+        return { status: 400, message: 'Onwer not found!' };
+      }
+
+      userData.name = name ?? userData.name;
+      userData.country = country ?? userData.country;
+      userData.email = email ?? userData.email;
+      userData.restaurantId = restaurantId ?? userData.restaurantId;
+      userData = await this.userRepo.save(userData);
+
+      return {
+        status: 200,
+        message: 'User updated successfully!',
+        data: userData,
+      };
+    } catch (error: any) {
+      return { status: 500, error: error.message };
+    }
+  }
+
   static async getAllUsers(req: Request | any): Promise<apiResponse> {
     try {
-      const tenantId = req?.tenantId;
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 10;
       const search = req.query.search ? req.query.search.toString() : null;
       const status = req.query.status;
 
       const baseCondition: any = {
-        tenantId: { id: tenantId },
         isDeleted: false,
+        roleName: RoleName.OWNER,
       };
       if (search) {
         baseCondition['name'] = ILike(`%${search}%`);

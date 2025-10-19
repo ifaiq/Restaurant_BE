@@ -128,7 +128,6 @@ export class MenuItemService {
         customizations,
         modifierIds,
       } = req.body;
-      console.log(req.body);
       if (!restaurantId) {
         return {
           status: 400,

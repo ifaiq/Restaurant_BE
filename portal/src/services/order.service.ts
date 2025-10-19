@@ -26,7 +26,6 @@ export class OrderService {
         specialInstructions,
         paymentMethod,
       } = req.body;
-      console.log(req.body);
       const restaurant = await AppDataSource.getRepository(
         'Restaurant',
       ).findOne({
@@ -95,7 +94,6 @@ export class OrderService {
       const totalAmount = subtotal;
 
       const orderNumber = this.generateOrderNumber();
-      console.log(restaurant);
       let order = this.orderRepo.create({
         orderNumber,
         restaurant,
