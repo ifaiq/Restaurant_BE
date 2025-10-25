@@ -9,6 +9,8 @@ import { MenuItem } from '../entity/MenuItem';
 import { MenuItemModifier } from '../entity/MenuItemModifier';
 import { Category } from '../entity/Category';
 import { Modifier } from '../entity/Modifiers';
+import { Restaurant } from '../entity/Restaurant';
+import { Table } from '../entity/Table';
 
 export class MenuItemService {
   private static menuRepo = AppDataSource.getRepository(Menu);
@@ -77,6 +79,28 @@ export class MenuItemService {
         return {
           status: 400,
           message: 'Table ID is required',
+        };
+      }
+      const restaurant = await AppDataSource.getRepository(Restaurant).findOne({
+        where: { id: restaurantId },
+        relations: ['tenantId'],
+      });
+      if (!restaurant) {
+        return {
+          status: 400,
+          message: 'Restaurant not found',
+        };
+      }
+
+      const table = await AppDataSource.getRepository(Table).findOne({
+        where: { id: tableId, restaurant: { id: restaurantId } },
+        relations: ['tenantId', 'restaurant'],
+      });
+
+      if (!table) {
+        return {
+          status: 400,
+          message: 'Table not found',
         };
       }
       const where: any = {

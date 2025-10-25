@@ -50,8 +50,7 @@ function isAllowedOrigin(origin: string | URL) {
     }
     if (
       url.protocol === 'https:' &&
-      (url.hostname === 'nerdybuddy.com' ||
-        url.hostname.endsWith('.nerdybuddy.com'))
+      (url.hostname === 'jaggha.com' || url.hostname.endsWith('.jaggha.com'))
     ) {
       return true;
     }
