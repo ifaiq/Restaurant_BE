@@ -15,7 +15,7 @@
   "editor.formatOnSave": true,
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "[typescript]": {
-    "editor.defaultFormatter": "vscode.typescript-language-features",
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.codeActionsOnSave": {
       "source.fixAll.eslint": "explicit"
     }
@@ -30,5 +30,7 @@
     "extensions": [".js", ".ts", ".jsx", ".tsx"]
   },
   "files.eol": "\n",
-  "prettier.endOfLine": "lf"
+  "prettier.endOfLine": "lf",
+  "prettier.tabWidth": 2,
+  "prettier.useTabs": false
 }
