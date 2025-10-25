@@ -25,6 +25,10 @@ router.post('/register', verifyTokenAndAdmin, async (req, res) => {
   await register(req, res);
 });
 
+router.post('/registerAdmin', async (req, res) => {
+  await register(req, res);
+});
+
 router.post('/login', sensitiveAuthLimiter, async (req, res) => {
   await login(req, res);
 });
