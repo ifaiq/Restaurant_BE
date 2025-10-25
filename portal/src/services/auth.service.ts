@@ -93,7 +93,6 @@ export class AuthService {
       newUser.email = email;
       newUser.password = hashedPassword;
       newUser.name = name;
-      newUser.isActive = false;
       newUser.roleName = roleName;
       newUser.tenantId = tenantId;
       const user = await this.userRepo.save(newUser);
