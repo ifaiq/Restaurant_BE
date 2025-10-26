@@ -17,6 +17,40 @@ export class TableService {
     try {
       const { tableNumber, restaurantId, seatingCapacity } = req.body;
 
+      if (!restaurantId) {
+        return {
+          status: 400,
+          message: 'Restaurant ID is required',
+        };
+      }
+      if (!tableNumber || !seatingCapacity) {
+        return {
+          status: 400,
+          message: 'Table number and seating capacity are required',
+        };
+      }
+
+      if (
+        typeof tableNumber !== 'number' ||
+        tableNumber < 1 ||
+        tableNumber > 10000
+      ) {
+        return {
+          status: 400,
+          message: 'Table number must be a number between 1 and 10000',
+        };
+      }
+      if (
+        typeof seatingCapacity !== 'number' ||
+        seatingCapacity < 1 ||
+        seatingCapacity > 20
+      ) {
+        return {
+          status: 400,
+          message: 'Seating capacity must be a number between 1 and 20',
+        };
+      }
+
       const existingTable = await this.tableRepo.findOneBy({
         tableNumber,
         restaurant: { id: restaurantId },
@@ -218,6 +252,34 @@ export class TableService {
       const { id } = req.params;
       const { tableNumber, status, seatingCapacity } = req.body;
       const tenantId = req?.tenantId;
+
+      // Validate table number if provided
+      if (tableNumber !== undefined) {
+        if (
+          typeof tableNumber !== 'number' ||
+          tableNumber < 1 ||
+          tableNumber > 10000
+        ) {
+          return {
+            status: 400,
+            message: 'Table number must be a number between 1 and 10000',
+          };
+        }
+      }
+
+      // Validate seating capacity if provided
+      if (seatingCapacity !== undefined) {
+        if (
+          typeof seatingCapacity !== 'number' ||
+          seatingCapacity < 1 ||
+          seatingCapacity > 20
+        ) {
+          return {
+            status: 400,
+            message: 'Seating capacity must be a number between 1 and 20',
+          };
+        }
+      }
 
       let table = await this.tableRepo.findOne({
         where: {

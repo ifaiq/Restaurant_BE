@@ -13,6 +13,7 @@ import {
 import {
   verifyToken,
   verifyTokenAndAdmin,
+  verifyTokenAndEdit,
   verifyTokenAndOwner,
 } from '../middlewares/verification';
 
@@ -38,7 +39,7 @@ router.get('/restaurant/:restaurantId', verifyToken, async (req, res) => {
   await getTablesByRestaurant(req, res);
 });
 
-router.put('/:id', verifyTokenAndAdmin, async (req, res) => {
+router.put('/:id', verifyTokenAndEdit, async (req, res) => {
   await updateTable(req, res);
 });
 

@@ -15,6 +15,8 @@ import {
   MaxLength,
   IsBoolean,
   IsEnum,
+  Max,
+  Min,
 } from 'class-validator';
 import { Restaurant } from './Restaurant';
 import { User } from './User';
@@ -33,11 +35,12 @@ export class Table {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column()
+  @Column({ nullable: true })
   @IsNotEmpty({ message: 'Table number is required' })
-  @IsString({ message: 'Table number must be a string' })
-  @MaxLength(20, { message: 'Table number must not exceed 20 characters' })
-  tableNumber!: string;
+  @IsNumber({}, { message: 'Table number must be a number' })
+  @Min(1, { message: 'Table number must be at least 1' })
+  @Max(10000, { message: 'Table number must not exceed 10000' })
+  tableNumber!: number;
 
   @ManyToOne(() => Restaurant, (restaurant) => restaurant.tables, {
     onDelete: 'CASCADE',
@@ -55,7 +58,9 @@ export class Table {
   @IsOptional()
   @IsNumber({}, { message: 'Seating capacity must be a number' })
   @IsPositive({ message: 'Seating capacity must be a positive number' })
-  seatingCapacity?: number;
+  @Min(1, { message: 'Seating capacity must be at least 1' })
+  @Max(20, { message: 'Seating capacity must not exceed 20 chairs' })
+  seatingCapacity!: number;
 
   @Column({ nullable: true })
   @IsOptional()
