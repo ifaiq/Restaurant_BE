@@ -8,7 +8,11 @@ import {
   updateRestaurant,
   deleteRestaurant,
 } from '../controllers/restaurant.controller';
-import { verifyToken, verifyTokenAndAdmin } from '../middlewares/verification';
+import {
+  verifyToken,
+  verifyTokenAndAdmin,
+  verifyTokenAndEdit,
+} from '../middlewares/verification';
 
 const router = Router();
 
@@ -32,7 +36,7 @@ router.get('/:parentId/branches', verifyToken, async (req, res) => {
   await getRestaurantBranches(req, res);
 });
 
-router.put('/:id', verifyTokenAndAdmin, async (req, res) => {
+router.put('/:id', verifyTokenAndEdit, async (req, res) => {
   await updateRestaurant(req, res);
 });
 

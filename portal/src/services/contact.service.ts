@@ -2,276 +2,225 @@ import { Request } from 'express';
 import { apiResponse } from '../types/res';
 import dotenv from 'dotenv';
 dotenv.config({ path: '../.env' });
-import { User } from '../entity/User';
-import * as bcrypt from 'bcrypt';
-import { jsonWeb } from '../utils/jwt';
 import { AppDataSource } from '../config/database';
-import { generateCode } from '../utils/generatorID';
-import { LessThan, MoreThan } from 'typeorm';
-import { EmailVerificationService } from '../utils/nodemailer';
-import { Tenant } from '../entity/Tenant';
-import {
-  resetPasswordEmailTemplate,
-  resetPasswordKeyEmailTemplate,
-} from '../helper/mailTemplate';
-export class AuthService {
-  private static userRepo = AppDataSource.getRepository(User);
-  private static tenantRepo = AppDataSource.getRepository(Tenant);
+import { Contact } from '../entity/Contact';
+import { ILike } from 'typeorm';
 
-  static async register(req: Request | any): Promise<apiResponse> {
+export class ContactService {
+  private static contactRepo = AppDataSource.getRepository(Contact);
+
+  static async createContact(req: Request | any): Promise<apiResponse> {
     try {
-      const tenantId = req?.tenantId;
-      const { email, password, name, roleName } = req.body;
-      if (!email || !password) {
-        return { status: 400, message: 'Email and password are required!' };
+      const { name, email, phone, message, subject } = req.body;
+
+      // Validate required fields
+      if (!name || !email || !message) {
+        return {
+          status: 400,
+          message: 'Name, email, and message are required',
+        };
       }
 
-      const existingUser = await this.userRepo.findOneBy({ email, tenantId });
-      if (existingUser) {
-        return { status: 400, message: 'User already exists!' };
-      }
+      // Create new contact
+      const contact = this.contactRepo.create({
+        name,
+        email,
+        phone,
+        message,
+        subject,
+        isRead: false,
+        isDeleted: false,
+      });
 
-      const hashedPassword = await bcrypt.hash(password, 10);
+      const savedContact = await this.contactRepo.save(contact);
 
-      const newUser = new User();
-      newUser.email = email;
-      newUser.password = hashedPassword;
-      newUser.name = name;
-      newUser.roleName = roleName;
-      newUser.tenantId = tenantId;
-      const user = await this.userRepo.save(newUser);
       return {
-        status: 200,
-        message: 'User registered successfully!',
-        data: user,
+        status: 201,
+        message: 'Contact form submitted successfully!',
+        data: savedContact,
       };
     } catch (error: any) {
       return { status: 500, error: error.message };
     }
   }
 
-  static async forgetPassword(req: Request): Promise<apiResponse> {
+  static async getAllContacts(req: Request | any): Promise<apiResponse> {
     try {
-      const { email } = req.body;
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+      const search = (req.query.search as string) || '';
+      const isRead = req.query.isRead as string;
 
-      if (!email) {
-        return { status: 400, message: 'Email is required!' };
+      const where: any = {
+        isDeleted: false,
+      };
+
+      if (search) {
+        where.name = ILike(`%${search}%`);
       }
 
-      const user = await this.userRepo.findOne({
-        where: { email, isDeleted: false, isActive: true },
+      if (isRead === 'true' || isRead === 'false') {
+        where.isRead = isRead === 'true';
+      }
+
+      const [contacts, total] = await this.contactRepo.findAndCount({
+        where,
+        take: limit,
+        skip: (page - 1) * limit,
+        order: { createdAt: 'DESC' },
       });
-
-      if (!user) {
-        return { status: 400, message: 'This user has been removed!' };
-      }
-
-      const uniqueID = await generateCode();
-      const resetTokenExpiration = new Date(Date.now() + 160000);
-
-      user.uniqueID = uniqueID;
-      user.resetTokenExpiration = resetTokenExpiration;
-
-      await this.userRepo.save(user);
-      const uniqueIDField = resetPasswordEmailTemplate(uniqueID);
-
-      await EmailVerificationService?.sendEmail(
-        email,
-        uniqueIDField,
-        {},
-        'Reset Password',
-      );
 
       return {
         status: 200,
-        message: 'Please check your Email!',
+        data: contacts,
+        meta: {
+          totalItems: total,
+          totalPages: Math.ceil(total / limit),
+          currentPage: page,
+        },
       };
     } catch (error: any) {
-      return { status: 500, message: error.message };
+      return { status: 500, error: error.message };
     }
   }
 
-  static async forgetKeyPassword(req: Request): Promise<apiResponse> {
+  static async getContactById(req: Request | any): Promise<apiResponse> {
     try {
-      const { email } = req.body;
+      const { id } = req.params;
 
-      if (!email) {
-        return { status: 400, message: 'Email is required!' };
-      }
-
-      const user = await this.userRepo.findOne({
-        where: { email, isDeleted: false, isActive: true },
+      const contact = await this.contactRepo.findOne({
+        where: { id, isDeleted: false },
       });
 
-      if (!user) {
-        return { status: 400, message: 'This user has been removed!' };
+      if (!contact) {
+        return {
+          status: 404,
+          message: 'Contact not found',
+        };
       }
-
-      const uniqueID = await generateCode();
-      const resetTokenExpiration = new Date(Date.now() + 160000);
-
-      user.uniqueID = uniqueID;
-      user.resetTokenExpiration = resetTokenExpiration;
-      const resetUrl = `${process.env.FRONTEND_RESET_URL}/auth/boxed-user-resetpassword?token=${uniqueID}`;
-
-      await this.userRepo.save(user);
-      const uniqueIDField = resetPasswordKeyEmailTemplate(resetUrl);
-
-      await EmailVerificationService?.sendEmail(
-        email,
-        uniqueIDField,
-        {},
-        'Reset Password',
-      );
 
       return {
         status: 200,
-        message: 'Please check your Email!',
+        data: contact,
       };
     } catch (error: any) {
-      return { status: 500, message: error.message };
+      return { status: 500, error: error.message };
     }
   }
 
-  static async passwordReset(req: Request): Promise<apiResponse> {
+  static async markAsRead(req: Request | any): Promise<apiResponse> {
     try {
-      const { uniqueID, password, confirmPassword } = req.body;
+      const { id } = req.params;
 
-      const user = await this.userRepo.findOne({
-        where: {
-          uniqueID,
-          resetTokenExpiration: MoreThan(new Date()),
-          isDeleted: false,
-        },
+      const contact = await this.contactRepo.findOne({
+        where: { id, isDeleted: false },
       });
 
-      if (!user) {
-        return { status: 400, message: 'Invalid OTP' };
+      if (!contact) {
+        return {
+          status: 404,
+          message: 'Contact not found',
+        };
       }
 
-      if (password !== confirmPassword) {
-        return { status: 400, message: 'Passwords do not match!' };
-      }
+      contact.isRead = true;
+      contact.updatedAt = new Date();
 
-      const hashedPassword = await bcrypt.hash(password, 10);
+      await this.contactRepo.save(contact);
 
-      user.password = hashedPassword;
-      user.uniqueID = '';
-      user.isActive = true;
-
-      await this.userRepo.save(user);
-
-      return { status: 200, message: 'Password updated successfully!' };
+      return {
+        status: 200,
+        message: 'Contact marked as read',
+        data: contact,
+      };
     } catch (error: any) {
-      return { status: 500, message: error.message };
+      return { status: 500, error: error.message };
     }
   }
 
-  static async passwordResetByEmail(req: Request): Promise<apiResponse> {
+  static async markAsUnread(req: Request | any): Promise<apiResponse> {
     try {
-      const { email, password, confirmPassword } = req.body;
+      const { id } = req.params;
 
-      const user = await this.userRepo.findOne({
-        where: {
-          email,
-          isDeleted: false,
-        },
+      const contact = await this.contactRepo.findOne({
+        where: { id, isDeleted: false },
       });
 
-      if (!user) {
-        return { status: 400, message: 'This user does not exist!' };
+      if (!contact) {
+        return {
+          status: 404,
+          message: 'Contact not found',
+        };
       }
 
-      if (password !== confirmPassword) {
-        return { status: 400, message: 'Passwords do not match!' };
-      }
+      contact.isRead = false;
+      contact.updatedAt = new Date();
 
-      const hashedPassword = await bcrypt.hash(password, 10);
+      await this.contactRepo.save(contact);
 
-      user.password = hashedPassword;
-      user.uniqueID = '';
-      user.isActive = true;
-
-      await this.userRepo.save(user);
-
-      return { status: 200, message: 'Password updated successfully!' };
+      return {
+        status: 200,
+        message: 'Contact marked as unread',
+        data: contact,
+      };
     } catch (error: any) {
-      return { status: 500, message: error.message };
+      return { status: 500, error: error.message };
     }
   }
 
-  static async passwordResetByToken(req: Request | any): Promise<apiResponse> {
+  static async deleteContact(req: Request | any): Promise<apiResponse> {
     try {
-      const { oldPassword, password, confirmPassword } = req.body;
-      const { id } = req.user;
+      const { id } = req.params;
 
-      if (!oldPassword || !password || !confirmPassword) {
-        return { status: 400, message: 'All fields are required!' };
-      }
-      const user = await this.userRepo.findOne({
-        where: {
-          id,
-          isDeleted: false,
-          isActive: true,
-        },
+      const contact = await this.contactRepo.findOne({
+        where: { id, isDeleted: false },
       });
 
-      if (!user) {
-        return { status: 400, message: 'This user does not exist!' };
-      }
-      if (oldPassword && !(await bcrypt.compare(oldPassword, user.password))) {
-        return { status: 400, message: 'Old password is incorrect!' };
-      }
-      if (password !== confirmPassword) {
-        return { status: 400, message: 'Passwords do not match!' };
+      if (!contact) {
+        return {
+          status: 404,
+          message: 'Contact not found',
+        };
       }
 
-      const hashedPassword = await bcrypt.hash(password, 10);
+      contact.isDeleted = true;
+      contact.updatedAt = new Date();
 
-      user.password = hashedPassword;
-      user.uniqueID = '';
-      user.isActive = true;
+      await this.contactRepo.save(contact);
 
-      await this.userRepo.save(user);
-
-      return { status: 200, message: 'Password updated successfully!' };
+      return {
+        status: 200,
+        message: 'Contact deleted successfully',
+      };
     } catch (error: any) {
-      return { status: 500, message: error.message };
+      return { status: 500, error: error.message };
     }
   }
 
-  static async verifyCode(req: Request): Promise<apiResponse> {
+  static async getContactStats(): Promise<apiResponse> {
     try {
-      const secret = process.env.JWT_SECRET;
-      const { uniqueID } = req.body;
-
-      const user = await this.userRepo.findOne({
-        where: {
-          uniqueID,
-          resetTokenExpiration: LessThan(new Date()),
-        },
+      const totalContacts = await this.contactRepo.count({
+        where: { isDeleted: false },
       });
 
-      if (user) {
-        await this.userRepo.save(user);
-        const token = await jsonWeb(user, secret as string);
-        return { status: 200, data: { ...user, token } };
-      } else {
-        return { status: 400, message: 'Invalid OTP or expired reset token!' };
-      }
-    } catch (error: any) {
-      return { status: 400, message: error.message };
-    }
-  }
+      const unreadContacts = await this.contactRepo.count({
+        where: { isDeleted: false, isRead: false },
+      });
 
-  static async genTenantId(): Promise<apiResponse> {
-    try {
-      const newCompany = await this.tenantRepo.create({});
+      const readContacts = await this.contactRepo.count({
+        where: { isDeleted: false, isRead: true },
+      });
 
-      await this.tenantRepo.save(newCompany);
-      return { status: 200, data: newCompany };
+      return {
+        status: 200,
+        data: {
+          total: totalContacts,
+          unread: unreadContacts,
+          read: readContacts,
+        },
+      };
     } catch (error: any) {
-      return { status: 500, message: error.message };
+      return { status: 500, error: error.message };
     }
   }
 }

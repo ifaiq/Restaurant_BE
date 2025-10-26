@@ -12,6 +12,7 @@ import { Category } from '../entity/Category';
 import { MenuItem } from '../entity/MenuItem';
 import { Modifier } from '../entity/Modifiers';
 import { MenuItemModifier } from '../entity/MenuItemModifier';
+import { Contact } from '../entity/Contact';
 
 export const AppDataSource = new DataSource({
   type: 'postgres',
@@ -31,8 +32,39 @@ export const AppDataSource = new DataSource({
     MenuItem,
     Modifier,
     MenuItemModifier,
+    Contact,
   ],
   synchronize: true,
+  // Connection pooling configuration
+  extra: {
+    // Maximum number of connections in the pool
+    max: parseInt(process.env.DB_POOL_MAX || '40'),
+    // Minimum number of connections in the pool
+    min: parseInt(process.env.DB_POOL_MIN || '5'),
+    // Maximum time (in milliseconds) that a connection can be idle before being closed
+    idleTimeoutMillis: parseInt(process.env.DB_POOL_IDLE_TIMEOUT || '30000'),
+    // Maximum time (in milliseconds) to wait for a connection to be established
+    connectionTimeoutMillis: parseInt(
+      process.env.DB_POOL_CONNECTION_TIMEOUT || '20000',
+    ),
+    // Maximum time (in milliseconds) to wait for a query to complete
+    queryTimeoutMillis: parseInt(process.env.DB_POOL_QUERY_TIMEOUT || '60000'),
+    // Maximum time (in milliseconds) to wait for acquiring a connection from the pool
+    acquireTimeoutMillis: parseInt(
+      process.env.DB_POOL_ACQUIRE_TIMEOUT || '60000',
+    ),
+    // Enable SSL if required
+    ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
+  },
+  // Connection pool settings
+  poolSize: parseInt(process.env.DB_POOL_SIZE || '10'),
+  // Enable connection pooling
+  poolErrorHandler: (err: Error) => {
+    logger.error({
+      level: 'error',
+      message: `Database pool error: ${err.message}`,
+    });
+  },
 });
 
 export const connectDB = async () => {
@@ -40,12 +72,19 @@ export const connectDB = async () => {
     await AppDataSource.initialize();
     logger.log({
       level: 'info',
-      message: `PostgreSQL connected (PID: ${process.pid})`,
+      message: `PostgreSQL connected with connection pooling (PID: ${process.pid})`,
+    });
+
+    // Log connection pool status
+    const poolConfig = AppDataSource.options.extra;
+    logger.log({
+      level: 'info',
+      message: `Connection pool configured - Max: ${poolConfig?.max}, Min: ${poolConfig?.min}, Pool Size: ${AppDataSource.options.poolSize}`,
     });
   } catch (error: any) {
     logger.error({
       level: 'error',
-      message: `Portal backend is running on port ${error.message}`,
+      message: `Database connection failed: ${error.message}`,
     });
   }
 };

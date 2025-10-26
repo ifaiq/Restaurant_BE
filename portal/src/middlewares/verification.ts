@@ -91,3 +91,23 @@ export const verifyTokenAndAdmin = (
     res.status(401).json({ status: 401, message: error.message });
   }
 };
+
+export const verifyTokenAndEdit = (
+  req: any,
+  res: Response,
+  next: NextFunction,
+): void => {
+  try {
+    verifyToken(req, res, () => {
+      if (req.user.roleName === 'OWNER' || req.user.roleName === 'ADMIN') {
+        next();
+      } else {
+        res
+          .status(401)
+          .json({ status: 401, message: 'You are not authenticated!' });
+      }
+    });
+  } catch (error: any) {
+    res.status(401).json({ status: 401, message: error.message });
+  }
+};

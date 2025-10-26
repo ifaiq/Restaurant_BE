@@ -12,6 +12,7 @@ import tableRouter from './routes/table.route';
 import modifierRouter from './routes/modifier.route';
 import menuItemRouter from './routes/menuItem.route';
 import categoryRouter from './routes/category.route';
+import contactRouter from './routes/contact.route';
 import cors from 'cors';
 import dotenv from 'dotenv';
 dotenv.config({ path: '../.env' });
@@ -96,8 +97,13 @@ app.use('/api/table', tableRouter);
 app.use('/api/modifier', modifierRouter);
 app.use('/api/menu-item', menuItemRouter);
 app.use('/api/category', categoryRouter);
+app.use('/api/contact', contactRouter);
 app.get('/', (req: Request, res: Response) => {
-  res.status(404).send('Nobody’s home.💀');
+  res.status(503).json({
+    status: 503,
+    message: 'Server not available',
+    error: 'Service temporarily unavailable!',
+  });
 });
 
 const PORT = process.env.PORTAL_PORT || 3000;
