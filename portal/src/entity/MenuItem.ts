@@ -12,6 +12,8 @@ import {
 import { Category } from './Category';
 import { MenuItemModifier } from './MenuItemModifier';
 import { Restaurant } from './Restaurant';
+import { IsNotEmpty } from 'class-validator';
+import { Tenant } from './Tenant';
 
 @Entity()
 export class MenuItem {
@@ -26,6 +28,11 @@ export class MenuItem {
 
   @Column({ length: 100 })
   itemName!: string;
+
+  @ManyToOne(() => Tenant)
+  @JoinColumn({ name: 'tenantId' })
+  @IsNotEmpty({ message: 'Tenant ID is required' })
+  tenantId!: Tenant;
 
   @Column({ type: 'text', nullable: true })
   description?: string;

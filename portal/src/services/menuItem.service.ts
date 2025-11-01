@@ -202,6 +202,7 @@ export class MenuItemService {
         restaurant: { id: restaurantId } as any,
         itemName,
         description,
+        tenantId,
         price,
         picture,
         category: categoryId ? ({ id: categoryId } as any) : undefined,
@@ -250,10 +251,17 @@ export class MenuItemService {
 
       let item = await this.itemRepo.findOne({
         where: { id },
-        relations: ['restaurant', 'modifierLinks', 'modifierLinks.modifier'],
+        relations: [
+          'restaurant',
+          'modifierLinks',
+          'modifierLinks.modifier',
+          'category',
+          'tenantId',
+        ],
       });
+      console.log(item);
       if (!item) return { status: 404, message: 'Menu item not found!' };
-      if (((item as any).restaurant as any)?.tenantId?.id !== tenantId) {
+      if ((item as any)?.tenantId?.id !== tenantId) {
         return { status: 403, message: 'Not allowed to modify this item' };
       }
 
@@ -276,7 +284,7 @@ export class MenuItemService {
         }
         (item as any).category = { id: categoryId } as any;
       }
-
+      console.log(picture);
       item.itemName = itemName ?? item.itemName;
       item.description = description ?? item.description;
       item.price = price ?? item.price;
