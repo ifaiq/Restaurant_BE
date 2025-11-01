@@ -6,7 +6,13 @@ import path from 'path';
 import { logger } from '../utils/logger';
 import { apiResponse } from '../types/res';
 
-dotenv.config({ path: '../.env' });
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+
+const uploadDirectory = path.resolve(__dirname, '../../uploads');
+
+if (!fs.existsSync(uploadDirectory)) {
+  fs.mkdirSync(uploadDirectory, { recursive: true });
+}
 
 const bucketName = process.env.AWS_BUCKET_NAME;
 const region = process.env.AWS_BUCKET_REGION;
@@ -30,7 +36,7 @@ const s3 = new S3Client({
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads/'); // Folder where the files will be stored temporarily
+    cb(null, uploadDirectory); // Folder where the files will be stored temporarily
   },
   filename: (req, file, cb) => {
     // const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
@@ -106,8 +112,12 @@ const fileUpload = async (req: Request | any) => {
   if (uploadResult.status !== 200) {
     return uploadResult;
   }
-
   const uploadedFile = req?.file;
+
+  if (!uploadedFile) {
+    return { status: 400, message: 'No file uploaded' };
+  }
+
   const s3UploadResult = await uploadFileToS3(uploadedFile);
   if (!s3UploadResult || s3UploadResult.message.includes('failed')) {
     return { status: 500, message: 'Error Uploading File' };

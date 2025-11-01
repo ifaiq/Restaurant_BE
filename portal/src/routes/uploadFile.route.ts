@@ -1,10 +1,10 @@
 import { Router } from 'express';
 import { uploadFile } from '../controllers/uploadFile.controller';
-import { verifyTokenAndOwner } from '../middlewares/verification';
+import { verifyTokenAndEdit } from '../middlewares/verification';
 
 const router = Router();
 
-router.post('/upload-file', verifyTokenAndOwner, async (req, res) => {
+router.post('/upload-file', verifyTokenAndEdit, async (req, res) => {
   await uploadFile(req, res);
 });
 
