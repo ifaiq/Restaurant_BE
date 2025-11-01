@@ -284,7 +284,6 @@ export class MenuItemService {
         }
         (item as any).category = { id: categoryId } as any;
       }
-      console.log(picture);
       item.itemName = itemName ?? item.itemName;
       item.description = description ?? item.description;
       item.price = price ?? item.price;
