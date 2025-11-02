@@ -7,14 +7,17 @@ import { AppDataSource } from '../config/database';
 import { User } from '../entity/User';
 import { ILike } from 'typeorm';
 import { AuthService } from './auth.service';
+import { logger } from '../utils/logger';
 export class RestaurantService {
   private static restaurantRepo = AppDataSource.getRepository(Restaurant);
   private static userRepo = AppDataSource.getRepository(User);
 
   static async createRestaurant(req: Request | any): Promise<apiResponse> {
     try {
+      logger.info('Creating new restaurant');
       const tenantResult = await AuthService.genTenantId();
       if (tenantResult.status !== 200) {
+        logger.error('Failed to create tenant for restaurant');
         return { status: 500, message: 'Failed to create tenant' };
       }
       const tenantId = tenantResult.data?.id;
@@ -43,6 +46,7 @@ export class RestaurantService {
       });
 
       if (existingRestaurant) {
+        logger.warn(`Restaurant already exists: ${restaurantName}`);
         return { status: 400, message: 'Restaurant already exists!' };
       }
 
@@ -68,15 +72,20 @@ export class RestaurantService {
 
       restaurant = await this.restaurantRepo.save(restaurant);
       if (!restaurant) {
+        logger.error('Unable to create restaurant');
         return { status: 400, message: 'Unable to create restaurant' };
       }
 
+      logger.info(
+        `Restaurant created successfully: ${restaurant.restaurantName} (ID: ${restaurant.id})`,
+      );
       return {
         status: 200,
         message: 'Restaurant created successfully!',
         data: restaurant,
       };
     } catch (error: any) {
+      logger.error(`Error creating restaurant: ${error.message}`);
       return { status: 500, error: error.message };
     }
   }
@@ -85,6 +94,7 @@ export class RestaurantService {
     req: Request | any,
   ): Promise<apiResponse> {
     try {
+      logger.info('Creating new restaurant branch');
       const {
         address,
         description,
@@ -105,6 +115,7 @@ export class RestaurantService {
       } = req.body;
 
       if (!parentRestaurantId) {
+        logger.warn('Parent restaurant ID is required for creating a branch');
         return {
           status: 400,
           message: 'Parent restaurant ID is required for creating a branch!',
@@ -120,6 +131,7 @@ export class RestaurantService {
       });
 
       if (!parentRestaurant) {
+        logger.warn(`Parent restaurant not found: ${parentRestaurantId}`);
         return {
           status: 400,
           message: 'Parent restaurant not found or is not a valid parent!',
@@ -135,6 +147,9 @@ export class RestaurantService {
       });
 
       if (existingBranch) {
+        logger.warn(
+          `Branch already exists: ${restaurantName} under parent ${parentRestaurantId}`,
+        );
         return {
           status: 400,
           message:
@@ -165,15 +180,20 @@ export class RestaurantService {
 
       branchRestaurant = await this.restaurantRepo.save(branchRestaurant);
       if (!branchRestaurant) {
+        logger.error('Unable to create restaurant branch');
         return { status: 400, message: 'Unable to create restaurant branch' };
       }
 
+      logger.info(
+        `Restaurant branch created successfully: ${branchRestaurant.restaurantName} (ID: ${branchRestaurant.id}) under parent ${parentRestaurantId}`,
+      );
       return {
         status: 200,
         message: 'Restaurant branch created successfully!',
         data: branchRestaurant,
       };
     } catch (error: any) {
+      logger.error(`Error creating restaurant branch: ${error.message}`);
       return { status: 500, error: error.message };
     }
   }
@@ -182,6 +202,7 @@ export class RestaurantService {
     try {
       const { id } = req.params;
       const tenantId = req?.tenantId;
+      logger.info(`Fetching restaurant with ID: ${id}`);
       const restaurant = await this.restaurantRepo.findOne({
         where: {
           id,
@@ -190,16 +211,22 @@ export class RestaurantService {
         relations: ['tenantId', 'tables'],
       });
       if (!restaurant) {
+        logger.warn(`Restaurant not found: ${id}`);
         return { status: 400, message: 'Restaurant not found!' };
       }
+      logger.info(
+        `Restaurant fetched successfully: ${restaurant.restaurantName} (ID: ${id})`,
+      );
       return { status: 200, data: restaurant };
     } catch (error: any) {
+      logger.error(`Error fetching restaurant: ${error.message}`);
       return { status: 500, error: error.message };
     }
   }
 
   static async getAllRestaurants(req: Request | any): Promise<apiResponse> {
     try {
+      logger.info('Fetching all restaurants');
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 10;
       const tenantId = req?.tenantId;
@@ -228,6 +255,9 @@ export class RestaurantService {
 
       const totalPages = Math.ceil(total / limit);
 
+      logger.info(
+        `Fetched ${restaurants.length} restaurants (Total: ${total}, Page: ${page}/${totalPages})`,
+      );
       return {
         status: 200,
         data: restaurants,
@@ -238,6 +268,7 @@ export class RestaurantService {
         },
       };
     } catch (error: any) {
+      logger.error(`Error fetching all restaurants: ${error.message}`);
       return { status: 500, error: error.message };
     }
   }
@@ -249,6 +280,7 @@ export class RestaurantService {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 10;
 
+      logger.info(`Fetching branches for parent restaurant: ${parentId}`);
       // Verify parent restaurant exists
       const parentRestaurant = await this.restaurantRepo.findOne({
         where: {
@@ -259,6 +291,7 @@ export class RestaurantService {
       });
 
       if (!parentRestaurant) {
+        logger.warn(`Parent restaurant not found: ${parentId}`);
         return { status: 400, message: 'Parent restaurant not found!' };
       }
 
@@ -276,6 +309,9 @@ export class RestaurantService {
 
       const totalPages = Math.ceil(total / limit);
 
+      logger.info(
+        `Fetched ${branches.length} branches for parent restaurant ${parentId} (Total: ${total}, Page: ${page}/${totalPages})`,
+      );
       return {
         status: 200,
         data: branches,
@@ -290,6 +326,7 @@ export class RestaurantService {
         },
       };
     } catch (error: any) {
+      logger.error(`Error fetching restaurant branches: ${error.message}`);
       return { status: 500, error: error.message };
     }
   }
@@ -297,6 +334,7 @@ export class RestaurantService {
   static async updateRestaurant(req: Request | any): Promise<apiResponse> {
     try {
       const { id } = req.params;
+      logger.info(`Updating restaurant: ${id}`);
       const {
         address,
         description,
@@ -317,6 +355,7 @@ export class RestaurantService {
         id,
       });
       if (!restaurant) {
+        logger.warn(`Restaurant not found for update: ${id}`);
         return { status: 400, message: 'Restaurant not found!' };
       }
 
@@ -354,12 +393,16 @@ export class RestaurantService {
       restaurant.isActive = isActive ? isActive : restaurant.isActive;
       restaurant = await this.restaurantRepo.save(restaurant);
 
+      logger.info(
+        `Restaurant updated successfully: ${restaurant.restaurantName} (ID: ${id})`,
+      );
       return {
         status: 200,
         message: 'Restaurant updated successfully!',
         data: restaurant,
       };
     } catch (error: any) {
+      logger.error(`Error updating restaurant: ${error.message}`);
       return { status: 500, error: error.message };
     }
   }
@@ -368,6 +411,7 @@ export class RestaurantService {
     try {
       const { id } = req.params;
       const tenantId = req?.tenantId;
+      logger.info(`Attempting to delete restaurant: ${id}`);
       const restaurant = await this.restaurantRepo.findOneBy({
         id: id,
         tenantId: {
@@ -375,6 +419,7 @@ export class RestaurantService {
         },
       });
       if (!restaurant) {
+        logger.warn(`Restaurant not found for deletion: ${id}`);
         return { status: 400, message: 'Restaurant not found!' };
       }
       const usersWithRestaurant = await this.userRepo.count({
@@ -387,6 +432,9 @@ export class RestaurantService {
       });
 
       if (usersWithRestaurant > 0) {
+        logger.warn(
+          `Cannot delete restaurant ${id}: assigned to ${usersWithRestaurant} users`,
+        );
         return {
           status: 400,
           message:
@@ -395,8 +443,12 @@ export class RestaurantService {
       }
       await this.restaurantRepo.delete({ id: id });
 
+      logger.info(
+        `Restaurant deleted successfully: ${restaurant.restaurantName} (ID: ${id})`,
+      );
       return { status: 200, message: 'Restaurant deleted successfully!' };
     } catch (error: any) {
+      logger.error(`Error deleting restaurant: ${error.message}`);
       return { status: 500, error: error.message };
     }
   }
