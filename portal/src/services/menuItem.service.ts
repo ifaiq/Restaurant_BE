@@ -259,7 +259,6 @@ export class MenuItemService {
           'tenantId',
         ],
       });
-      console.log(item);
       if (!item) return { status: 404, message: 'Menu item not found!' };
       if ((item as any)?.tenantId?.id !== tenantId) {
         return { status: 403, message: 'Not allowed to modify this item' };
