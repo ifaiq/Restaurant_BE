@@ -9,6 +9,7 @@ import { Between, ILike } from 'typeorm';
 //import { loginInfoEmailTemplate } from '../helper/mailTemplate';
 import { MongoClient } from 'mongodb';
 // import { EmailQueueProducer } from '../queues/producer/emailQueue.producer';
+import { logger } from '../utils/logger';
 
 export class UserService {
   private static userRepo = AppDataSource.getRepository(User);
@@ -61,12 +62,16 @@ export class UserService {
       //   {},
       //   'Login Details',
       // );
+      logger.info(`Owner created successfully!`, { user });
       return {
         status: 200,
         message: 'Owner created successfully!',
         data: user,
       };
     } catch (error: any) {
+      logger.warn(`Owner creation error: ${error.message}`, {
+        stack: error.stack,
+      });
       return { status: 500, error: error.message };
     }
   }
@@ -115,12 +120,16 @@ export class UserService {
       //   {},
       //   'Login Details',
       // );
+      logger.info(`Staff created successfully!`, { user });
       return {
         status: 200,
         message: 'Staff created successfully!',
         data: user,
       };
     } catch (error: any) {
+      logger.warn(`Staff creation error: ${error.message}`, {
+        stack: error.stack,
+      });
       return { status: 500, error: error.message };
     }
   }
@@ -208,7 +217,7 @@ export class UserService {
       userData.isDeleted = true;
       userData.isActive = false;
       await this.userRepo.save(userData);
-
+      logger.info(`User deleted successfully!`, { userData });
       return { status: 200, message: 'User deleted successfully!' };
     } catch (error: any) {
       return { status: 500, error: error.message };
@@ -328,6 +337,7 @@ export class UserService {
       });
 
       const totalPages = Math.ceil(total / limit);
+      logger.info(`Users fetched successfully!`);
       return {
         status: 200,
         data: users,
@@ -524,6 +534,8 @@ export class UserService {
       const [users, total] = await this.userRepo.findAndCount({
         where: {
           roleName: RoleName.STAFF,
+          isDeleted: false,
+          isActive: true,
           tenantId: {
             id: tenantId,
           },
@@ -537,6 +549,7 @@ export class UserService {
       });
 
       const totalPages = Math.ceil(total / limit);
+      logger.info(`Staff fetched successfully!`);
 
       return {
         status: 200,
@@ -548,6 +561,9 @@ export class UserService {
         },
       };
     } catch (error: any) {
+      logger.warn(`Staff fetch error: ${error.message}`, {
+        stack: error.stack,
+      });
       return { status: 500, error: error.message };
     }
   }

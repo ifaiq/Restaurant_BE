@@ -90,7 +90,7 @@ router.post('/createStaff', verifyTokenAndOwner, async (req, res) => {
 });
 router.delete(
   '/delete/:id',
-  verifyTokenAndAdmin,
+  verifyTokenAndOwner,
 
   async (req, res) => {
     await deleteUser(req, res);

@@ -14,6 +14,7 @@ import {
   resetPasswordEmailTemplate,
   resetPasswordKeyEmailTemplate,
 } from '../helper/mailTemplate';
+import { logger } from '../utils/logger';
 export class AuthService {
   private static userRepo = AppDataSource.getRepository(User);
   private static tenantRepo = AppDataSource.getRepository(Tenant);
@@ -21,6 +22,8 @@ export class AuthService {
   static async login(req: Request): Promise<apiResponse> {
     try {
       const { email, password } = req.body;
+      logger.info(`Login attempt for email: ${email}`);
+
       // const roleName = (() => {
       //   switch (type?.toLowerCase()) {
       //     case 'user':
@@ -38,12 +41,15 @@ export class AuthService {
         relations: ['tenantId', 'restaurantId'],
       });
       if (!existingUser || !email) {
+        logger.warn(`Login failed: User not found for email: ${email}`);
         return { status: 404, message: 'User not found!' };
       }
       if (existingUser?.isDeleted) {
+        logger.warn(`Login failed: Deleted user attempted login: ${email}`);
         return { status: 404, message: 'This user has been removed!' };
       }
       if (existingUser?.isActive === false) {
+        logger.warn(`Login failed: Deactivated user attempted login: ${email}`);
         return { status: 400, message: 'This user has been deactivated' };
       }
       if (
@@ -51,6 +57,9 @@ export class AuthService {
         existingUser?.roleName !== RoleName.ADMIN &&
         existingUser?.isAdmin === false
       ) {
+        logger.warn(
+          `Login failed: Unauthorized user attempted login: ${email}`,
+        );
         return { status: 400, message: 'You are not authorized to login' };
       }
       if (
@@ -66,10 +75,17 @@ export class AuthService {
           process.env.JWT_SECRET as string,
         );
 
+        logger.info(
+          `Login successful for user: ${email}, ID: ${existingUser.id}`,
+        );
         return { status: 200, data: { ...result, token } };
       }
+      logger.warn(`Login failed: Incorrect password for email: ${email}`);
       return { status: 400, message: 'Incorrect password or login' };
     } catch (error: any) {
+      logger.error(`Login error for email:  ${error.message}`, {
+        stack: error.stack,
+      });
       return { status: 500, error: error.message };
     }
   }
@@ -78,12 +94,20 @@ export class AuthService {
     try {
       const tenantId = req?.tenantId;
       const { email, password, name, roleName } = req.body;
+      logger.info(
+        `Registration attempt for email: ${email}, role: ${roleName}, tenantId: ${tenantId}`,
+      );
+
       if (!email || !password) {
+        logger.warn(`Registration failed: Missing email or password`);
         return { status: 400, message: 'Email and password are required!' };
       }
 
       const existingUser = await this.userRepo.findOneBy({ email, tenantId });
       if (existingUser) {
+        logger.warn(
+          `Registration failed: User already exists for email: ${email}`,
+        );
         return { status: 400, message: 'User already exists!' };
       }
 
@@ -96,12 +120,16 @@ export class AuthService {
       newUser.roleName = roleName;
       newUser.tenantId = tenantId;
       const user = await this.userRepo.save(newUser);
+      logger.info(`User registered successfully: ${email}, ID: ${user.id}`);
       return {
         status: 200,
         message: 'User registered successfully!',
         data: user,
       };
     } catch (error: any) {
+      logger.error(`Registration error for email: ${error.message}`, {
+        stack: error.stack,
+      });
       return { status: 500, error: error.message };
     }
   }
@@ -109,8 +137,10 @@ export class AuthService {
   static async forgetPassword(req: Request): Promise<apiResponse> {
     try {
       const { email } = req.body;
+      logger.info(`Password reset request for email: ${email}`);
 
       if (!email) {
+        logger.warn(`Password reset failed: Email is required`);
         return { status: 400, message: 'Email is required!' };
       }
 
@@ -119,6 +149,9 @@ export class AuthService {
       });
 
       if (!user) {
+        logger.warn(
+          `Password reset failed: User not found or removed for email: ${email}`,
+        );
         return { status: 400, message: 'This user has been removed!' };
       }
 
@@ -138,11 +171,15 @@ export class AuthService {
         'Reset Password',
       );
 
+      logger.info(`Password reset email sent to: ${email}`);
       return {
         status: 200,
         message: 'Please check your Email!',
       };
     } catch (error: any) {
+      logger.error(`Password reset error for email: ${error.message}`, {
+        stack: error.stack,
+      });
       return { status: 500, message: error.message };
     }
   }
@@ -150,8 +187,10 @@ export class AuthService {
   static async forgetKeyPassword(req: Request): Promise<apiResponse> {
     try {
       const { email } = req.body;
+      logger.info(`Password reset (with key) request for email: ${email}`);
 
       if (!email) {
+        logger.warn(`Password reset (with key) failed: Email is required`);
         return { status: 400, message: 'Email is required!' };
       }
 
@@ -160,6 +199,9 @@ export class AuthService {
       });
 
       if (!user) {
+        logger.warn(
+          `Password reset (with key) failed: User not found or removed for email: ${email}`,
+        );
         return { status: 400, message: 'This user has been removed!' };
       }
 
@@ -180,11 +222,16 @@ export class AuthService {
         'Reset Password',
       );
 
+      logger.info(`Password reset (with key) email sent to: ${email}`);
       return {
         status: 200,
         message: 'Please check your Email!',
       };
     } catch (error: any) {
+      logger.error(
+        `Password reset (with key) error for email:  ${error.message}`,
+        { stack: error.stack },
+      );
       return { status: 500, message: error.message };
     }
   }
@@ -192,6 +239,7 @@ export class AuthService {
   static async passwordReset(req: Request): Promise<apiResponse> {
     try {
       const { uniqueID, password, confirmPassword } = req.body;
+      logger.info(`Password reset attempt with uniqueID: ${uniqueID}`);
 
       const user = await this.userRepo.findOne({
         where: {
@@ -202,10 +250,16 @@ export class AuthService {
       });
 
       if (!user) {
+        logger.warn(
+          `Password reset failed: Invalid or expired OTP for uniqueID: ${uniqueID}`,
+        );
         return { status: 400, message: 'Invalid OTP' };
       }
 
       if (password !== confirmPassword) {
+        logger.warn(
+          `Password reset failed: Passwords do not match for user: ${user.email}`,
+        );
         return { status: 400, message: 'Passwords do not match!' };
       }
 
@@ -217,8 +271,14 @@ export class AuthService {
 
       await this.userRepo.save(user);
 
+      logger.info(
+        `Password reset successful for user: ${user.email}, ID: ${user.id}`,
+      );
       return { status: 200, message: 'Password updated successfully!' };
     } catch (error: any) {
+      logger.error(`Password reset error: ${error.message}`, {
+        stack: error.stack,
+      });
       return { status: 500, message: error.message };
     }
   }
@@ -226,6 +286,7 @@ export class AuthService {
   static async passwordResetByEmail(req: Request): Promise<apiResponse> {
     try {
       const { email, password, confirmPassword } = req.body;
+      logger.info(`Password reset by email attempt for: ${email}`);
 
       const user = await this.userRepo.findOne({
         where: {
@@ -235,10 +296,16 @@ export class AuthService {
       });
 
       if (!user) {
+        logger.warn(
+          `Password reset by email failed: User does not exist for email: ${email}`,
+        );
         return { status: 400, message: 'This user does not exist!' };
       }
 
       if (password !== confirmPassword) {
+        logger.warn(
+          `Password reset by email failed: Passwords do not match for user: ${email}`,
+        );
         return { status: 400, message: 'Passwords do not match!' };
       }
 
@@ -250,8 +317,14 @@ export class AuthService {
 
       await this.userRepo.save(user);
 
+      logger.info(
+        `Password reset by email successful for user: ${email}, ID: ${user.id}`,
+      );
       return { status: 200, message: 'Password updated successfully!' };
     } catch (error: any) {
+      logger.error(`Password reset by email error for:  ${error.message}`, {
+        stack: error.stack,
+      });
       return { status: 500, message: error.message };
     }
   }
@@ -260,8 +333,12 @@ export class AuthService {
     try {
       const { oldPassword, password, confirmPassword } = req.body;
       const { id } = req.user;
+      logger.info(`Password reset by token attempt for user ID: ${id}`);
 
       if (!oldPassword || !password || !confirmPassword) {
+        logger.warn(
+          `Password reset by token failed: Missing required fields for user ID: ${id}`,
+        );
         return { status: 400, message: 'All fields are required!' };
       }
       const user = await this.userRepo.findOne({
@@ -273,12 +350,21 @@ export class AuthService {
       });
 
       if (!user) {
+        logger.warn(
+          `Password reset by token failed: User does not exist for ID: ${id}`,
+        );
         return { status: 400, message: 'This user does not exist!' };
       }
       if (oldPassword && !(await bcrypt.compare(oldPassword, user.password))) {
+        logger.warn(
+          `Password reset by token failed: Incorrect old password for user: ${user.email}`,
+        );
         return { status: 400, message: 'Old password is incorrect!' };
       }
       if (password !== confirmPassword) {
+        logger.warn(
+          `Password reset by token failed: Passwords do not match for user: ${user.email}`,
+        );
         return { status: 400, message: 'Passwords do not match!' };
       }
 
@@ -290,8 +376,15 @@ export class AuthService {
 
       await this.userRepo.save(user);
 
+      logger.info(
+        `Password reset by token successful for user: ${user.email}, ID: ${id}`,
+      );
       return { status: 200, message: 'Password updated successfully!' };
     } catch (error: any) {
+      logger.error(
+        `Password reset by token error for user ID:  ${error.message}`,
+        { stack: error.stack },
+      );
       return { status: 500, message: error.message };
     }
   }
@@ -300,6 +393,7 @@ export class AuthService {
     try {
       const secret = process.env.JWT_SECRET;
       const { uniqueID } = req.body;
+      logger.info(`Code verification attempt for uniqueID: ${uniqueID}`);
 
       const user = await this.userRepo.findOne({
         where: {
@@ -311,22 +405,36 @@ export class AuthService {
       if (user) {
         await this.userRepo.save(user);
         const token = await jsonWeb(user, secret as string);
+        logger.info(
+          `Code verification successful for user: ${user.email}, ID: ${user.id}`,
+        );
         return { status: 200, data: { ...user, token } };
       } else {
+        logger.warn(
+          `Code verification failed: Invalid or expired OTP for uniqueID: ${uniqueID}`,
+        );
         return { status: 400, message: 'Invalid OTP or expired reset token!' };
       }
     } catch (error: any) {
+      logger.error(`Code verification error: ${error.message}`, {
+        stack: error.stack,
+      });
       return { status: 400, message: error.message };
     }
   }
 
   static async genTenantId(): Promise<apiResponse> {
     try {
+      logger.info(`Generating new tenant ID`);
       const newCompany = await this.tenantRepo.create({});
 
       await this.tenantRepo.save(newCompany);
+      logger.info(`Tenant ID generated successfully: ${newCompany.id}`);
       return { status: 200, data: newCompany };
     } catch (error: any) {
+      logger.error(`Tenant ID generation error: ${error.message}`, {
+        stack: error.stack,
+      });
       return { status: 500, message: error.message };
     }
   }

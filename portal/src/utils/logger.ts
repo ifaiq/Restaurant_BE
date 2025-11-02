@@ -30,7 +30,7 @@ export const initializeMongoLogger = async () => {
 
   const transportOptions = {
     db: url,
-    collection: 'stage',
+    collection: 'logs',
   };
 
   logger.add(new transports.MongoDB(transportOptions));
