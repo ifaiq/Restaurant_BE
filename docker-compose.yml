@@ -20,7 +20,7 @@ services:
   #     - /usr/src/app/node_modules
 
   postgres:
-     image: postgres:17.5
+     image: postgres:18
      container_name: restaurant_postgres
      restart: always
      env_file:
