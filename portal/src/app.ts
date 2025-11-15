@@ -37,6 +37,7 @@ setInterval(() => {
       `Load Average: 1min=${load[0].toFixed(2)}, 5min=${load[1].toFixed(2)}, 15min=${load[2].toFixed(2)}`,
   );
 }, 60000);
+
 // import { EmailQueueExecutor } from './queues/executor/emailQueue.executor';
 // import { setupGracefulShutdown } from './queues/consumer';
 
