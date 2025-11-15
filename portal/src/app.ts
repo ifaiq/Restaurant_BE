@@ -17,6 +17,23 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 dotenv.config({ path: '../.env' });
 import { initializeMongoLogger, logger } from './utils/logger';
+
+process.on('uncaughtException', (err) => {
+  logger.error('Uncaught Exception:', err);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+setInterval(() => {
+  const memoryUsage = process.memoryUsage();
+  logger.info(
+    `Memory Usage: RSS=${(memoryUsage.rss / 1024 / 1024).toFixed(2)} MB, ` +
+      `Heap Total=${(memoryUsage.heapTotal / 1024 / 1024).toFixed(2)} MB, ` +
+      `Heap Used=${(memoryUsage.heapUsed / 1024 / 1024).toFixed(2)} MB`,
+  );
+}, 60000);
 // import { EmailQueueExecutor } from './queues/executor/emailQueue.executor';
 // import { setupGracefulShutdown } from './queues/consumer';
 
