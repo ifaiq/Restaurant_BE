@@ -11,23 +11,31 @@ export class ContactService {
 
   static async createContact(req: Request | any): Promise<apiResponse> {
     try {
-      const { name, email, phone, message, subject } = req.body;
+      const {
+        restaurantName,
+        contactName,
+        email,
+        phone,
+        location,
+        seatingCapacity,
+      } = req.body;
 
       // Validate required fields
-      if (!name || !email || !message) {
+      if (!restaurantName || !contactName || !email) {
         return {
           status: 400,
-          message: 'Name, email, and message are required',
+          message: 'Restaurant name, contact name, and email are required',
         };
       }
 
       // Create new contact
       const contact = this.contactRepo.create({
-        name,
+        restaurantName,
+        contactName,
         email,
         phone,
-        message,
-        subject,
+        location,
+        seatingCapacity,
         isRead: false,
         isDeleted: false,
       });
@@ -56,7 +64,7 @@ export class ContactService {
       };
 
       if (search) {
-        where.name = ILike(`%${search}%`);
+        where.restaurantName = ILike(`%${search}%`);
       }
 
       if (isRead === 'true' || isRead === 'false') {

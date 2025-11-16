@@ -507,7 +507,7 @@ export class MenuItemService {
           const isSpicyValue = getCellValue('isSpicy');
           const nutritionalInfoValue = getCellValue('nutritionalInfo');
           const customizationsValue = getCellValue('customizations');
-          const modifierIdsValue = getCellValue('modifierIds');
+          //const modifierIdsValue = getCellValue('modifierIds');
 
           // Validate required fields
           if (!itemName) {
@@ -620,17 +620,17 @@ export class MenuItemService {
           }
 
           // Parse modifier IDs (comma-separated)
-          let modifierIds: string[] = [];
-          if (modifierIdsValue) {
-            const modifierIdsStr =
-              typeof modifierIdsValue === 'string'
-                ? modifierIdsValue
-                : modifierIdsValue.toString();
-            modifierIds = modifierIdsStr
-              .split(',')
-              .map((id: string) => id.trim())
-              .filter((id: string) => id.length > 0);
-          }
+          // let modifierIds: string[] = [];
+          // if (modifierIdsValue) {
+          //   const modifierIdsStr =
+          //     typeof modifierIdsValue === 'string'
+          //       ? modifierIdsValue
+          //       : modifierIdsValue.toString();
+          //   modifierIds = modifierIdsStr
+          //     .split(',')
+          //     .map((id: string) => id.trim())
+          //     .filter((id: string) => id.length > 0);
+          // }
 
           // Create menu item
           const item = this.itemRepo.create({
@@ -648,9 +648,9 @@ export class MenuItemService {
             isSpicy,
             nutritionalInfo,
             customizations,
-            modifierLinks: modifierIds.map((id: string) => ({
-              modifier: { id } as Modifier,
-            })) as any,
+            // modifierLinks: modifierIds.map((id: string) => ({
+            //   modifier: { id } as Modifier,
+            // })) as any,
           });
 
           const savedItem = await this.itemRepo.save(item);

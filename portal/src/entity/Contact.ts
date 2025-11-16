@@ -20,10 +20,20 @@ export class Contact {
   id!: string;
 
   @Column()
-  @IsNotEmpty({ message: 'Name is required' })
-  @IsString({ message: 'Name must be a string' })
-  @Length(2, 100, { message: 'Name must be between 2 and 100 characters' })
-  name!: string;
+  @IsNotEmpty({ message: 'Restaurant name is required' })
+  @IsString({ message: 'Restaurant name must be a string' })
+  @Length(2, 200, {
+    message: 'Restaurant name must be between 2 and 200 characters',
+  })
+  restaurantName!: string;
+
+  @Column()
+  @IsNotEmpty({ message: 'Contact name is required' })
+  @IsString({ message: 'Contact name must be a string' })
+  @Length(2, 100, {
+    message: 'Contact name must be between 2 and 100 characters',
+  })
+  contactName!: string;
 
   @Column()
   @IsNotEmpty({ message: 'Email is required' })
@@ -37,19 +47,17 @@ export class Contact {
   @Length(10, 20, { message: 'Phone must be between 10 and 20 characters' })
   phone?: string;
 
-  @Column({ type: 'text' })
-  @IsNotEmpty({ message: 'Message is required' })
-  @IsString({ message: 'Message must be a string' })
-  @Length(10, 2000, {
-    message: 'Message must be between 10 and 2000 characters',
-  })
-  message!: string;
+  @Column({ nullable: true })
+  @IsOptional()
+  @IsString({ message: 'Location must be a string' })
+  @MaxLength(255, { message: 'Location must not exceed 255 characters' })
+  location?: string;
 
   @Column({ nullable: true })
   @IsOptional()
-  @IsString({ message: 'Subject must be a string' })
-  @MaxLength(200, { message: 'Subject must not exceed 200 characters' })
-  subject?: string;
+  @IsString({ message: 'Seating capacity must be a string' })
+  @MaxLength(50, { message: 'Seating capacity must not exceed 50 characters' })
+  seatingCapacity?: string;
 
   @Column({ default: false })
   @IsOptional()
