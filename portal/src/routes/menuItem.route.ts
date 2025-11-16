@@ -5,9 +5,11 @@ import {
   deleteMenuItem,
   getAllMenuItems,
   getAllRestaurantMenuItems,
+  createMenuItemFromExcel,
 } from '../controllers/menuItem.controller';
 import { verifyToken, verifyTokenAndOwner } from '../middlewares/verification';
 import { rateLimit } from 'express-rate-limit';
+import multer from 'multer';
 
 const menuItemLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -16,6 +18,8 @@ const menuItemLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+const upload = multer();
 
 const router = Router();
 
@@ -42,5 +46,14 @@ router.put('/:id', verifyTokenAndOwner, async (req, res) => {
 router.delete('/:id', verifyTokenAndOwner, async (req, res) => {
   await deleteMenuItem(req, res);
 });
+
+router.post(
+  '/import-excel/:id',
+  upload.single('file'),
+  verifyTokenAndOwner,
+  async (req, res) => {
+    await createMenuItemFromExcel(req, res);
+  },
+);
 
 export default router;

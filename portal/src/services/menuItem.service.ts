@@ -11,6 +11,8 @@ import { Category } from '../entity/Category';
 import { Modifier } from '../entity/Modifiers';
 import { Restaurant } from '../entity/Restaurant';
 import { Table } from '../entity/Table';
+import ExcelJS from 'exceljs';
+import { logger } from '../utils/logger';
 
 export class MenuItemService {
   private static menuRepo = AppDataSource.getRepository(Menu);
@@ -333,6 +335,355 @@ export class MenuItemService {
       await this.itemRepo.delete({ id });
       return { status: 200, message: 'Menu item deleted successfully!' };
     } catch (error: any) {
+      return { status: 500, error: error.message };
+    }
+  }
+
+  static async createFromExcel(req: Request | any): Promise<apiResponse> {
+    try {
+      const file = req?.file;
+      const tenantId = req?.tenantId;
+      const restaurantId = req.params.id;
+
+      if (!restaurantId) {
+        return {
+          status: 400,
+          message: 'Restaurant ID is required',
+        };
+      }
+
+      if (!tenantId) {
+        return {
+          status: 400,
+          message: 'Tenant ID is required',
+        };
+      }
+
+      if (!file) {
+        return { status: 400, message: 'No Excel file uploaded' };
+      }
+
+      // Validate restaurant belongs to tenant
+      const restaurant = await AppDataSource.getRepository(
+        'Restaurant',
+      ).findOne({
+        where: { id: restaurantId, tenantId: { id: tenantId } },
+        relations: ['tenantId'],
+      });
+
+      if (!restaurant) {
+        return { status: 404, message: 'Restaurant not found!' };
+      }
+
+      // Read and parse Excel file from buffer
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.load(file.buffer);
+
+      const worksheet = workbook.getWorksheet(1); // Get first worksheet
+      if (!worksheet) {
+        return { status: 400, message: 'Excel file is empty or invalid' };
+      }
+
+      // Get header row (assume first row is headers)
+      const headerRow = worksheet.getRow(1);
+      const headers: string[] = [];
+      headerRow.eachCell({ includeEmpty: false }, (cell) => {
+        headers.push(cell.value?.toString().toLowerCase().trim() || '');
+      });
+
+      // Expected columns mapping
+      const columnMap: { [key: string]: string } = {
+        itemname: 'itemName',
+        'item name': 'itemName',
+        name: 'itemName',
+        description: 'description',
+        desc: 'description',
+        price: 'price',
+        picture: 'picture',
+        image: 'picture',
+        categoryid: 'categoryId',
+        'category id': 'categoryId',
+        category: 'categoryId',
+        isactive: 'isActive',
+        'is active': 'isActive',
+        active: 'isActive',
+        isvegetarian: 'isVegetarian',
+        'is vegetarian': 'isVegetarian',
+        vegetarian: 'isVegetarian',
+        isvegan: 'isVegan',
+        'is vegan': 'isVegan',
+        vegan: 'isVegan',
+        isglutenfree: 'isGlutenFree',
+        'is gluten free': 'isGlutenFree',
+        glutenfree: 'isGlutenFree',
+        isspicy: 'isSpicy',
+        'is spicy': 'isSpicy',
+        spicy: 'isSpicy',
+        nutritionalinfo: 'nutritionalInfo',
+        'nutritional info': 'nutritionalInfo',
+        nutrition: 'nutritionalInfo',
+        customizations: 'customizations',
+        customization: 'customizations',
+        modifierids: 'modifierIds',
+        'modifier ids': 'modifierIds',
+        modifiers: 'modifierIds',
+      };
+
+      // Find column indices
+      const columnIndices: { [key: string]: number } = {};
+      headers.forEach((header, index) => {
+        const normalizedHeader = header.toLowerCase().trim();
+        if (columnMap[normalizedHeader]) {
+          columnIndices[columnMap[normalizedHeader]] = index + 1; // ExcelJS uses 1-based indexing
+        }
+      });
+
+      // Validate required columns
+      if (!columnIndices['itemName']) {
+        return {
+          status: 400,
+          message:
+            'Required column "itemName" (or "Item Name", "Name") not found in Excel file',
+        };
+      }
+
+      if (!columnIndices['price']) {
+        return {
+          status: 400,
+          message: 'Required column "price" not found in Excel file',
+        };
+      }
+
+      if (!columnIndices['categoryId']) {
+        return {
+          status: 400,
+          message:
+            'Required column "categoryId" (or "Category ID", "Category") not found in Excel file',
+        };
+      }
+
+      // Process rows
+      const results: {
+        success: any[];
+        errors: Array<{ row: number; error: string }>;
+      } = {
+        success: [],
+        errors: [],
+      };
+
+      for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
+        const row = worksheet.getRow(rowNumber);
+        try {
+          // Check if row is empty
+          const rowValues = Array.isArray(row.values) ? row.values : [];
+          const hasData = rowValues.some(
+            (value: any, index: number) =>
+              index > 0 &&
+              value !== null &&
+              value !== undefined &&
+              value !== '',
+          );
+          if (!hasData) {
+            continue; // Skip empty rows
+          }
+
+          // Extract data from row
+          const getCellValue = (columnName: string): any => {
+            const colIndex = columnIndices[columnName];
+            if (!colIndex) return undefined;
+            const cell = row.getCell(colIndex);
+            return cell.value;
+          };
+
+          const itemName = getCellValue('itemName')?.toString().trim();
+          const description =
+            getCellValue('description')?.toString().trim() || '';
+          const priceValue = getCellValue('price');
+          const picture =
+            getCellValue('picture')?.toString().trim() || undefined;
+          const categoryIdValue = getCellValue('categoryId');
+          const isActiveValue = getCellValue('isActive');
+          const isVegetarianValue = getCellValue('isVegetarian');
+          const isVeganValue = getCellValue('isVegan');
+          const isGlutenFreeValue = getCellValue('isGlutenFree');
+          const isSpicyValue = getCellValue('isSpicy');
+          const nutritionalInfoValue = getCellValue('nutritionalInfo');
+          const customizationsValue = getCellValue('customizations');
+          const modifierIdsValue = getCellValue('modifierIds');
+
+          // Validate required fields
+          if (!itemName) {
+            results.errors.push({
+              row: rowNumber,
+              error: 'Item name is required',
+            });
+            continue;
+          }
+
+          const price =
+            typeof priceValue === 'number'
+              ? priceValue
+              : parseFloat(priceValue?.toString() || '0');
+          if (isNaN(price) || price <= 0) {
+            results.errors.push({
+              row: rowNumber,
+              error: 'Valid price is required',
+            });
+            continue;
+          }
+
+          if (!categoryIdValue) {
+            results.errors.push({
+              row: rowNumber,
+              error: 'Category ID is required',
+            });
+            continue;
+          }
+
+          const categoryName = categoryIdValue?.toString().trim(); // value from CSV
+
+          if (!categoryName) {
+            results.errors.push({
+              row: rowNumber,
+              error: 'Category name is required',
+            });
+            continue;
+          }
+
+          // Look up category by name and restaurant
+          const category = await AppDataSource.getRepository(Category).findOne({
+            where: {
+              name: categoryName,
+              restaurantId: { id: restaurantId },
+              isDeleted: false,
+            },
+          });
+          if (!category) {
+            results.errors.push({
+              row: rowNumber,
+              error: `Category with ID "${categoryName}" not found or invalid for this restaurant`,
+            });
+            continue;
+          }
+
+          // Parse boolean values
+          const parseBoolean = (
+            value: any,
+            defaultValue: boolean = false,
+          ): boolean => {
+            if (value === undefined || value === null || value === '') {
+              return defaultValue;
+            }
+            if (typeof value === 'boolean') return value;
+            if (typeof value === 'string') {
+              const lower = value.toLowerCase().trim();
+              return ['yes', 'true', '1', 'y', 'on'].includes(lower);
+            }
+            if (typeof value === 'number') return value !== 0;
+            return defaultValue;
+          };
+
+          const isActive = parseBoolean(isActiveValue, true);
+          const isVegetarian = parseBoolean(isVegetarianValue, false);
+          const isVegan = parseBoolean(isVeganValue, false);
+          const isGlutenFree = parseBoolean(isGlutenFreeValue, false);
+          const isSpicy = parseBoolean(isSpicyValue, false);
+
+          // Parse JSON fields
+          let nutritionalInfo: any = undefined;
+          if (nutritionalInfoValue) {
+            try {
+              nutritionalInfo =
+                typeof nutritionalInfoValue === 'string'
+                  ? JSON.parse(nutritionalInfoValue)
+                  : nutritionalInfoValue;
+            } catch {
+              // If parsing fails, treat as plain text or skip
+              logger.log({
+                level: 'warn',
+                message: `Row ${rowNumber}: Could not parse nutritionalInfo as JSON`,
+              });
+            }
+          }
+
+          let customizations: any = undefined;
+          if (customizationsValue) {
+            try {
+              customizations =
+                typeof customizationsValue === 'string'
+                  ? JSON.parse(customizationsValue)
+                  : customizationsValue;
+            } catch {
+              logger.log({
+                level: 'warn',
+                message: `Row ${rowNumber}: Could not parse customizations as JSON`,
+              });
+            }
+          }
+
+          // Parse modifier IDs (comma-separated)
+          let modifierIds: string[] = [];
+          if (modifierIdsValue) {
+            const modifierIdsStr =
+              typeof modifierIdsValue === 'string'
+                ? modifierIdsValue
+                : modifierIdsValue.toString();
+            modifierIds = modifierIdsStr
+              .split(',')
+              .map((id: string) => id.trim())
+              .filter((id: string) => id.length > 0);
+          }
+
+          // Create menu item
+          const item = this.itemRepo.create({
+            restaurant: { id: restaurantId } as any,
+            itemName,
+            description,
+            tenantId,
+            price,
+            picture,
+            category: category ? ({ id: category.id } as any) : undefined,
+            isActive,
+            isVegetarian,
+            isVegan,
+            isGlutenFree,
+            isSpicy,
+            nutritionalInfo,
+            customizations,
+            modifierLinks: modifierIds.map((id: string) => ({
+              modifier: { id } as Modifier,
+            })) as any,
+          });
+
+          const savedItem = await this.itemRepo.save(item);
+          results.success.push(savedItem);
+        } catch (error: any) {
+          logger.log({
+            level: 'error',
+            message: `Error processing row ${rowNumber}: ${error.message}`,
+          });
+          results.errors.push({
+            row: rowNumber,
+            error: error.message || 'Unknown error',
+          });
+        }
+      }
+
+      return {
+        status: 200,
+        message: `Excel import completed. Success: ${results.success.length}, Errors: ${results.errors.length}`,
+        data: {
+          successCount: results.success.length,
+          errorCount: results.errors.length,
+          createdItems: results.success,
+          errors: results.errors,
+        },
+      };
+    } catch (error: any) {
+      logger.log({
+        level: 'error',
+        message: `Error in createFromExcel: ${error.message}`,
+      });
       return { status: 500, error: error.message };
     }
   }

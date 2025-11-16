@@ -62,3 +62,15 @@ export async function deleteMenuItem(
     return res.status(500).send({ error: error.message });
   }
 }
+
+export async function createMenuItemFromExcel(
+  req: Request,
+  res: Response,
+): Promise<apiResponse> {
+  try {
+    const { status, ...data } = await MenuItemService.createFromExcel(req);
+    return res.status(status).send(data);
+  } catch (error: any) {
+    return res.status(500).send({ error: error.message });
+  }
+}

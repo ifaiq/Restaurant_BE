@@ -5,6 +5,7 @@ import {
   ManyToOne,
   JoinColumn,
   DeleteDateColumn,
+  Unique,
 } from 'typeorm';
 import {
   IsBoolean,
@@ -18,6 +19,7 @@ import { Tenant } from './Tenant';
 import { User } from './User';
 
 @Entity()
+@Unique(['restaurantId', 'name'])
 export class Category {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
