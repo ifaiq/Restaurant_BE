@@ -6,6 +6,7 @@ import {
   JoinColumn,
   DeleteDateColumn,
   Unique,
+  Index,
 } from 'typeorm';
 import {
   IsBoolean,
@@ -20,6 +21,7 @@ import { User } from './User';
 
 @Entity()
 @Unique(['restaurantId', 'name'])
+@Index(['restaurantId', 'name'])
 export class Category {
   @PrimaryGeneratedColumn('uuid')
   id!: string;

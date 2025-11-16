@@ -4,7 +4,6 @@ import dotenv from 'dotenv';
 dotenv.config({ path: '../.env' });
 import { AppDataSource } from '../config/database';
 import { ILike } from 'typeorm';
-import { Menu } from '../entity/Menu';
 import { MenuItem } from '../entity/MenuItem';
 import { MenuItemModifier } from '../entity/MenuItemModifier';
 import { Category } from '../entity/Category';
@@ -15,7 +14,6 @@ import ExcelJS from 'exceljs';
 import { logger } from '../utils/logger';
 
 export class MenuItemService {
-  private static menuRepo = AppDataSource.getRepository(Menu);
   private static itemRepo = AppDataSource.getRepository(MenuItem);
   private static itemModRepo = AppDataSource.getRepository(MenuItemModifier);
 
@@ -553,7 +551,7 @@ export class MenuItemService {
           // Look up category by name and restaurant
           const category = await AppDataSource.getRepository(Category).findOne({
             where: {
-              name: categoryName,
+              name: ILike(categoryName), // case-insensitive match
               restaurantId: { id: restaurantId },
               isDeleted: false,
             },
