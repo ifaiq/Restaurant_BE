@@ -53,11 +53,14 @@ export class Contact {
   @MaxLength(255, { message: 'Location must not exceed 255 characters' })
   location?: string;
 
-  @Column({ nullable: true })
+  @Column({
+    type: 'enum',
+    enum: ['small', 'medium', 'large', 'xlarge'],
+    nullable: true,
+  })
   @IsOptional()
   @IsString({ message: 'Seating capacity must be a string' })
-  @MaxLength(50, { message: 'Seating capacity must not exceed 50 characters' })
-  seatingCapacity?: string;
+  seatingCapacity?: 'small' | 'medium' | 'large' | 'xlarge';
 
   @Column({ default: false })
   @IsOptional()
