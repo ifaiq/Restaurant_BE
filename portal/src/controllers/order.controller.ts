@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { OrderService } from '../services/order.service';
 import { apiResponse } from '../types/res';
 import { SSEManager } from '../utils/sse';
+import { logger } from '../utils/logger';
 
 export async function createOrder(
   req: Request,
@@ -146,7 +147,7 @@ export async function subscribeToOrderUpdates(
       filters,
     );
 
-    console.log(
+    logger.info(
       `SSE connection established for user ${user?.id} - connection: ${connectionId}`,
     );
 
@@ -158,7 +159,7 @@ export async function subscribeToOrderUpdates(
       24 * 60 * 60 * 1000,
     ); // 24 hours
   } catch (error: any) {
-    console.error('SSE subscription error:', error);
+    logger.error(`SSE subscription error: ${error.message}`);
     res.status(500).end();
   }
 }

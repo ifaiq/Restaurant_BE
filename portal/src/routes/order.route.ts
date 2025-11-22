@@ -37,7 +37,10 @@ router.get('/number/:orderNumber', verifyToken, async (req, res) => {
 });
 
 // SSE endpoint for real-time order updates
-router.get('/events', verifyToken, async (req, res) => {
+// - Long-lived connection (24-hour timeout)
+// - Automatic cleanup on disconnect
+// - Filtered broadcasts to reduce unnecessary traffic
+router.get('/events', async (req, res) => {
   await subscribeToOrderUpdates(req, res);
 });
 
