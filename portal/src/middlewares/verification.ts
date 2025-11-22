@@ -30,6 +30,7 @@ export const verifyToken = (
         token,
         process.env.JWT_SECRET as string,
       ) as JwtPayload;
+      logger.info(`User verification attempt: ${JSON.stringify(user)}`);
       if (user?.roleName !== 'ADMIN' && user?.tenantId?.id) {
         req.user = user;
         req.tenantId = user?.tenantId?.id;
