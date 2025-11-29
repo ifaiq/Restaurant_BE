@@ -35,6 +35,22 @@ services:
      networks:
        - res-network
 
+  redis:
+   image: redis:8.4.0-alpine3.22
+   container_name: redis
+   restart: always
+   env_file:
+     - .env
+   environment:
+     - REDIS_PASSWORD=${REDIS_PASSWORD}
+   command: redis-server --requirepass ${REDIS_PASSWORD}
+   volumes:
+     - redis_data_dev:/data
+   ports:
+     - ${REDIS_PORT}:6379
+   networks:
+     - res-network
+
 
 networks:
   res-network:
@@ -42,3 +58,4 @@ networks:
 
 volumes:
   postgres_data_dev:
+  redis_data_dev:
