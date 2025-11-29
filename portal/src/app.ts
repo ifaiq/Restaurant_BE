@@ -16,7 +16,7 @@ import contactRouter from './routes/contact.route';
 import cors from 'cors';
 import dotenv from 'dotenv';
 dotenv.config({ path: '../.env' });
-import { initializeMongoLogger, logger } from './utils/logger';
+import { initializeRedisLogger, logger } from './utils/logger';
 import os from 'os';
 
 process.on('uncaughtException', (err) => {
@@ -44,7 +44,7 @@ import { setupGracefulShutdown } from './queues/consumer';
 const emailWorker = new EmailQueueExecutor();
 setupGracefulShutdown([emailWorker]);
 connectDB();
-initializeMongoLogger();
+initializeRedisLogger();
 const app = express();
 
 app.use(helmet());

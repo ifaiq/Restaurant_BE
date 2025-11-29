@@ -1,6 +1,5 @@
 import dotenv from 'dotenv';
 import { Redis } from 'ioredis';
-import { logger } from '../utils/logger';
 dotenv.config({ path: '../.env' });
 
 const redisConfig = {
@@ -17,17 +16,13 @@ export const createRedisConnection = () => {
     redis = new Redis(redisConfig);
 
     redis.on('connect', () => {
-      logger.log({
-        level: 'info',
-        message: `Redis connected successfully (PID: ${process.pid})`,
-      });
+      // Use console to avoid circular dependency with logger
+      console.log(`Redis connected successfully (PID: ${process.pid})`);
     });
 
     redis.on('error', (err) => {
-      logger.log({
-        level: 'info',
-        message: `Redis connection error:, ${err.message}`,
-      });
+      // Use console to avoid circular dependency with logger
+      console.error(`Redis connection error: ${err.message}`);
     });
   }
   return redis;
