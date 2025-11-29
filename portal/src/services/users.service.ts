@@ -6,14 +6,14 @@ import { RoleName, User } from '../entity/User';
 import * as bcrypt from 'bcrypt';
 import { AppDataSource } from '../config/database';
 import { Between, ILike } from 'typeorm';
-//import { loginInfoEmailTemplate } from '../helper/mailTemplate';
+import { loginInfoEmailTemplate } from '../helper/mailTemplate';
 import { MongoClient } from 'mongodb';
-// import { EmailQueueProducer } from '../queues/producer/emailQueue.producer';
+import { EmailQueueProducer } from '../queues/producer/emailQueue.producer';
 import { logger } from '../utils/logger';
 
 export class UserService {
   private static userRepo = AppDataSource.getRepository(User);
-  // private static emailQueueProducer = new EmailQueueProducer();
+  private static emailQueueProducer = new EmailQueueProducer();
   static async createOwner(req: Request | any): Promise<apiResponse> {
     try {
       const { email, name, country, restaurantId, password } = req.body;
@@ -55,13 +55,13 @@ export class UserService {
       if (!user) {
         return { status: 400, message: 'Unable to create owner' };
       }
-      //const passwordField = loginInfoEmailTemplate(password);
-      // await this.emailQueueProducer.addEmailJob(
-      //   email,
-      //   passwordField,
-      //   {},
-      //   'Login Details',
-      // );
+      const passwordField = loginInfoEmailTemplate(password);
+      await this.emailQueueProducer.addEmailJob(
+        email,
+        passwordField,
+        {},
+        'Login Details',
+      );
       logger.info(`Owner created successfully!`, { user });
       return {
         status: 200,
@@ -113,13 +113,13 @@ export class UserService {
       if (!user) {
         return { status: 400, message: 'Unable to create user' };
       }
-      //const passwordField = loginInfoEmailTemplate(password);
-      // await this.emailQueueProducer.addEmailJob(
-      //   email,
-      //   passwordField,
-      //   {},
-      //   'Login Details',
-      // );
+      const passwordField = loginInfoEmailTemplate(password);
+      await this.emailQueueProducer.addEmailJob(
+        email,
+        passwordField,
+        {},
+        'Login Details',
+      );
       logger.info(`Staff created successfully!`, { user });
       return {
         status: 200,

@@ -38,11 +38,11 @@ setInterval(() => {
   );
 }, 60000);
 
-// import { EmailQueueExecutor } from './queues/executor/emailQueue.executor';
-// import { setupGracefulShutdown } from './queues/consumer';
+import { EmailQueueExecutor } from './queues/executor/emailQueue.executor';
+import { setupGracefulShutdown } from './queues/consumer';
 
-// const emailWorker = new EmailQueueExecutor();
-// setupGracefulShutdown([emailWorker]);
+const emailWorker = new EmailQueueExecutor();
+setupGracefulShutdown([emailWorker]);
 connectDB();
 initializeMongoLogger();
 const app = express();

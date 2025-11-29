@@ -8,7 +8,7 @@ import { jsonWeb } from '../utils/jwt';
 import { AppDataSource } from '../config/database';
 import { generateCode } from '../utils/generatorID';
 import { LessThan, MoreThan } from 'typeorm';
-import { EmailVerificationService } from '../utils/nodemailer';
+import { EmailQueueProducer } from '../queues/producer/emailQueue.producer';
 import { Tenant } from '../entity/Tenant';
 import {
   resetPasswordEmailTemplate,
@@ -18,6 +18,7 @@ import { logger } from '../utils/logger';
 export class AuthService {
   private static userRepo = AppDataSource.getRepository(User);
   private static tenantRepo = AppDataSource.getRepository(Tenant);
+  private static emailQueueProducer = new EmailQueueProducer();
 
   static async login(req: Request): Promise<apiResponse> {
     try {
@@ -164,14 +165,14 @@ export class AuthService {
       await this.userRepo.save(user);
       const uniqueIDField = resetPasswordEmailTemplate(uniqueID);
 
-      await EmailVerificationService?.sendEmail(
+      await this.emailQueueProducer.addEmailJob(
         email,
         uniqueIDField,
         {},
         'Reset Password',
       );
 
-      logger.info(`Password reset email sent to: ${email}`);
+      logger.info(`Password reset email queued for: ${email}`);
       return {
         status: 200,
         message: 'Please check your Email!',
@@ -215,14 +216,14 @@ export class AuthService {
       await this.userRepo.save(user);
       const uniqueIDField = resetPasswordKeyEmailTemplate(resetUrl);
 
-      await EmailVerificationService?.sendEmail(
+      await this.emailQueueProducer.addEmailJob(
         email,
         uniqueIDField,
         {},
         'Reset Password',
       );
 
-      logger.info(`Password reset (with key) email sent to: ${email}`);
+      logger.info(`Password reset (with key) email queued for: ${email}`);
       return {
         status: 200,
         message: 'Please check your Email!',
