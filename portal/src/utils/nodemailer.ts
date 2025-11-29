@@ -34,9 +34,6 @@ export class EmailVerificationService {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
       },
-      // Add debug logging for troubleshooting
-      debug: process.env.NODE_ENV === 'development',
-      logger: process.env.NODE_ENV === 'development',
     });
 
     // Verify connection before sending
