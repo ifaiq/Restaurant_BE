@@ -6,7 +6,7 @@ export const jsonWeb = async (user: any, secret: string): Promise<string> => {
       ...user,
     },
     secret,
-    { expiresIn: '1d' },
+    { expiresIn: '31d' },
   );
   return `Bearer ${token}`;
 };
