@@ -18,6 +18,7 @@ import {
   IsOptional,
   IsDate,
   IsBoolean,
+  IsPhoneNumber,
 } from 'class-validator';
 import { Restaurant } from './Restaurant';
 
@@ -58,6 +59,17 @@ export class User {
   @IsOptional()
   @IsString()
   country?: string;
+
+  @Column({ nullable: true, unique: true })
+  @IsOptional()
+  @IsString()
+  @IsPhoneNumber()
+  phone?: string;
+
+  @Column({ nullable: true })
+  @IsOptional()
+  @IsString()
+  address?: string;
 
   @ManyToOne(() => Restaurant, { nullable: true })
   @JoinColumn({ name: 'restaurantId' })

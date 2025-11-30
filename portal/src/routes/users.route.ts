@@ -13,6 +13,7 @@ import {
   getUserUsageAnalytics,
   getStaffById,
   getOwnerById,
+  updateProfile,
 } from '../controllers/users.controller';
 import {
   verifyToken,
@@ -81,7 +82,14 @@ router.put(
     await updateStaff(req, res);
   },
 );
+router.put(
+  '/editProfile',
+  verifyToken,
 
+  async (req, res) => {
+    await updateProfile(req, res);
+  },
+);
 router.post('/createOwner', verifyTokenAndAdmin, async (req, res) => {
   await createOwner(req, res);
 });

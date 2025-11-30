@@ -14,9 +14,68 @@ import { logger } from '../utils/logger';
 export class UserService {
   private static userRepo = AppDataSource.getRepository(User);
   private static emailQueueProducer = new EmailQueueProducer();
+
+  /**
+   * Helper function to parse database errors and return user-friendly messages
+   */
+  private static parseDatabaseError(error: any): {
+    status: number;
+    message: string;
+  } {
+    const errorMessage = error.message || '';
+    const errorCode = error.code || '';
+
+    // Handle unique constraint violations
+    if (errorCode === '23505' || errorMessage.includes('duplicate key')) {
+      if (errorMessage.includes('phone') || errorMessage.includes('UQ_')) {
+        return {
+          status: 409,
+          message:
+            'This phone number is already registered. Please use a different phone number.',
+        };
+      }
+      if (errorMessage.includes('email')) {
+        return {
+          status: 409,
+          message:
+            'This email address is already registered. Please use a different email address.',
+        };
+      }
+      return {
+        status: 409,
+        message:
+          'A record with this information already exists. Please check your input and try again.',
+      };
+    }
+
+    // Handle foreign key constraint violations
+    if (errorCode === '23503' || errorMessage.includes('foreign key')) {
+      return {
+        status: 400,
+        message: 'Invalid reference. One or more related records do not exist.',
+      };
+    }
+
+    // Handle not null constraint violations
+    if (errorCode === '23502' || errorMessage.includes('not null')) {
+      return {
+        status: 400,
+        message:
+          'Required fields are missing. Please check your input and try again.',
+      };
+    }
+
+    // Generic database error
+    return {
+      status: 500,
+      message:
+        'An error occurred while processing your request. Please try again later.',
+    };
+  }
   static async createOwner(req: Request | any): Promise<apiResponse> {
     try {
-      const { email, name, country, restaurantId, password } = req.body;
+      const { email, name, country, restaurantId, password, phone, address } =
+        req.body;
 
       if (!restaurantId) {
         return { status: 400, message: 'Restaurant ID is required!' };
@@ -39,7 +98,25 @@ export class UserService {
         tenantId: { id: tenantId },
       });
       if (existingUser) {
-        return { status: 404, message: 'User with this email already exists!' };
+        return {
+          status: 409,
+          message:
+            'A user with this email address already exists. Please use a different email.',
+        };
+      }
+
+      // Check if phone number is already taken
+      if (phone) {
+        const existingUserWithPhone = await this.userRepo.findOne({
+          where: { phone, isDeleted: false },
+        });
+        if (existingUserWithPhone) {
+          return {
+            status: 409,
+            message:
+              'This phone number is already registered. Please use a different phone number.',
+          };
+        }
       }
 
       const hashedPassword = await bcrypt.hash(password, 10);
@@ -48,6 +125,8 @@ export class UserService {
       newUser.password = hashedPassword;
       newUser.name = name;
       newUser.country = country;
+      newUser.phone = phone;
+      newUser.address = address;
       newUser.roleName = RoleName.OWNER;
       newUser.tenantId = tenantId;
       newUser.restaurantId = restaurantId;
@@ -72,13 +151,14 @@ export class UserService {
       logger.warn(`Owner creation error: ${error.message}`, {
         stack: error.stack,
       });
-      return { status: 500, error: error.message };
+      const parsedError = this.parseDatabaseError(error);
+      return { status: parsedError.status, message: parsedError.message };
     }
   }
 
   static async createStaff(req: Request | any): Promise<apiResponse> {
     try {
-      const { email, name, password, country } = req.body;
+      const { email, name, password, country, phone, address } = req.body;
       const restaurantId = req.user.restaurantId?.id;
       const tenantId = req.user.tenantId?.id;
 
@@ -97,7 +177,25 @@ export class UserService {
         tenantId: { id: tenantId },
       });
       if (existingUser) {
-        return { status: 404, message: 'User with this email already exists!' };
+        return {
+          status: 409,
+          message:
+            'A user with this email address already exists. Please use a different email.',
+        };
+      }
+
+      // Check if phone number is already taken
+      if (phone) {
+        const existingUserWithPhone = await this.userRepo.findOne({
+          where: { phone, isDeleted: false },
+        });
+        if (existingUserWithPhone) {
+          return {
+            status: 409,
+            message:
+              'This phone number is already registered. Please use a different phone number.',
+          };
+        }
       }
 
       const hashedPassword = await bcrypt.hash(password, 10);
@@ -106,6 +204,8 @@ export class UserService {
       newUser.password = hashedPassword;
       newUser.name = name;
       newUser.country = country;
+      newUser.phone = phone;
+      newUser.address = address;
       newUser.roleName = RoleName.STAFF;
       newUser.tenantId = tenantId;
       newUser.restaurantId = restaurantId;
@@ -130,7 +230,8 @@ export class UserService {
       logger.warn(`Staff creation error: ${error.message}`, {
         stack: error.stack,
       });
-      return { status: 500, error: error.message };
+      const parsedError = this.parseDatabaseError(error);
+      return { status: parsedError.status, message: parsedError.message };
     }
   }
 
@@ -229,7 +330,7 @@ export class UserService {
       const { id } = req.params;
       const tenantId = req?.tenantId;
 
-      const { country, name } = req.body;
+      const { country, name, phone, address } = req.body;
       let userData = await this.userRepo.findOne({
         where: {
           id: id,
@@ -240,28 +341,94 @@ export class UserService {
         },
       });
       if (!userData) {
-        return { status: 400, message: 'User not found!' };
+        return { status: 400, message: 'Staff member not found!' };
+      }
+
+      // Check if phone number is being changed and if it's already taken
+      if (phone && phone !== userData.phone) {
+        const existingUserWithPhone = await this.userRepo.findOne({
+          where: { phone, isDeleted: false },
+        });
+        if (existingUserWithPhone && existingUserWithPhone.id !== id) {
+          return {
+            status: 409,
+            message:
+              'This phone number is already registered. Please use a different phone number.',
+          };
+        }
       }
 
       userData.name = name ?? userData.name;
       userData.country = country ?? userData.country;
+      userData.phone = phone ?? userData.phone;
+      userData.address = address ?? userData.address;
+      userData = await this.userRepo.save(userData);
+
+      logger.info(`Staff member updated successfully: ${userData.email}`);
+      return {
+        status: 200,
+        message: 'Staff member information updated successfully!',
+        data: userData,
+      };
+    } catch (error: any) {
+      logger.error(`Staff update error: ${error.message}`, {
+        stack: error.stack,
+      });
+      const parsedError = this.parseDatabaseError(error);
+      return { status: parsedError.status, message: parsedError.message };
+    }
+  }
+  static async updateProfile(req: Request | any): Promise<apiResponse> {
+    try {
+      const { id } = req.user;
+      const tenantId = req?.tenantId;
+      const { country, name, phone, address } = req.body;
+      let userData = await this.userRepo.findOneBy({
+        id: id,
+        tenantId: { id: tenantId },
+      });
+      if (!userData) {
+        return { status: 400, message: 'User not found!' };
+      }
+
+      // Check if phone number is being changed and if it's already taken
+      if (phone && phone !== userData.phone) {
+        const existingUserWithPhone = await this.userRepo.findOne({
+          where: { phone, isDeleted: false },
+        });
+        if (existingUserWithPhone && existingUserWithPhone.id !== id) {
+          return {
+            status: 409,
+            message:
+              'This phone number is already registered. Please use a different phone number.',
+          };
+        }
+      }
+
+      userData.name = name ?? userData.name;
+      userData.country = country ?? userData.country;
+      userData.phone = phone ?? userData.phone;
+      userData.address = address ?? userData.address;
       userData = await this.userRepo.save(userData);
 
       return {
         status: 200,
-        message: 'User updated successfully!',
+        message: 'Profile updated successfully!',
         data: userData,
       };
     } catch (error: any) {
-      return { status: 500, error: error.message };
+      logger.error(`Profile update error: ${error.message}`, {
+        stack: error.stack,
+      });
+      const parsedError = this.parseDatabaseError(error);
+      return { status: parsedError.status, message: parsedError.message };
     }
   }
-
   static async updateOwner(req: Request | any): Promise<apiResponse> {
     try {
       const { id } = req.params;
 
-      const { country, name, email, restaurantId } = req.body;
+      const { country, name, email, restaurantId, phone, address } = req.body;
       let userData = await this.userRepo.findOne({
         where: {
           id: id,
@@ -269,22 +436,57 @@ export class UserService {
         },
       });
       if (!userData) {
-        return { status: 400, message: 'Onwer not found!' };
+        return { status: 400, message: 'Owner not found!' };
+      }
+
+      // Check if email is being changed and if it's already taken
+      if (email && email !== userData.email) {
+        const existingUserWithEmail = await this.userRepo.findOne({
+          where: { email, isDeleted: false },
+        });
+        if (existingUserWithEmail && existingUserWithEmail.id !== id) {
+          return {
+            status: 409,
+            message:
+              'This email address is already registered. Please use a different email address.',
+          };
+        }
+      }
+
+      // Check if phone number is being changed and if it's already taken
+      if (phone && phone !== userData.phone) {
+        const existingUserWithPhone = await this.userRepo.findOne({
+          where: { phone, isDeleted: false },
+        });
+        if (existingUserWithPhone && existingUserWithPhone.id !== id) {
+          return {
+            status: 409,
+            message:
+              'This phone number is already registered. Please use a different phone number.',
+          };
+        }
       }
 
       userData.name = name ?? userData.name;
       userData.country = country ?? userData.country;
       userData.email = email ?? userData.email;
+      userData.phone = phone ?? userData.phone;
+      userData.address = address ?? userData.address;
       userData.restaurantId = restaurantId ?? userData.restaurantId;
       userData = await this.userRepo.save(userData);
 
+      logger.info(`Owner updated successfully: ${userData.email}`);
       return {
         status: 200,
-        message: 'User updated successfully!',
+        message: 'Owner information updated successfully!',
         data: userData,
       };
     } catch (error: any) {
-      return { status: 500, error: error.message };
+      logger.error(`Owner update error: ${error.message}`, {
+        stack: error.stack,
+      });
+      const parsedError = this.parseDatabaseError(error);
+      return { status: parsedError.status, message: parsedError.message };
     }
   }
 

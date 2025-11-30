@@ -120,6 +120,18 @@ export async function updateStaff(
     return res.status(500).send({ error: error.message });
   }
 }
+
+export async function updateProfile(
+  req: Request,
+  res: Response,
+): Promise<apiResponse> {
+  try {
+    const { status, ...data } = await UserService.updateProfile(req);
+    return res.status(status).send(data);
+  } catch (error: any) {
+    return res.status(500).send({ error: error.message });
+  }
+}
 export async function getUserAnalytics(
   req: Request,
   res: Response,
