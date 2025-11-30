@@ -4,14 +4,11 @@ import dotenv from 'dotenv';
 dotenv.config({ path: '../.env' });
 import { Table } from '../entity/Table';
 import { AppDataSource } from '../config/database';
-import { User } from '../entity/User';
 import { ILike } from 'typeorm';
-import { v4 as uuidv4 } from 'uuid';
-import QRCode from 'qrcode';
+import { generateTableQRCode } from '../helper/qrCode';
 
 export class TableService {
   private static tableRepo = AppDataSource.getRepository(Table);
-  private static userRepo = AppDataSource.getRepository(User);
 
   static async createTable(req: Request | any): Promise<apiResponse> {
     try {
@@ -77,14 +74,11 @@ export class TableService {
         };
       }
 
-      // Generate QR code data
-      const qrCodeData = uuidv4();
-      //const qrCodeUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/api/menu/${restaurantId}?table=${tableNumber}&qr=${qrCodeData}`;
+      // Create table first to get the table ID
       let table = this.tableRepo.create({
         tableNumber,
         seatingCapacity,
         restaurant: { id: restaurantId },
-        qrCode: qrCodeData,
         tenantId: { id: restaurant.tenantId?.id },
       });
 
@@ -92,6 +86,17 @@ export class TableService {
       if (!table) {
         return { status: 400, message: 'Unable to create table' };
       }
+
+      // Generate QR code URL and image
+      const { qrCodeUrl, qrCodeImage } = await generateTableQRCode(
+        restaurantId,
+        table.id,
+      );
+
+      // Update table with QR code URL and image
+      table.qrCode = qrCodeUrl;
+      table.qrCodeImage = qrCodeImage;
+      table = await this.tableRepo.save(table);
 
       return {
         status: 200,
@@ -288,6 +293,7 @@ export class TableService {
             id: tenantId,
           },
         },
+        relations: ['restaurant'],
       });
 
       if (!table) {
@@ -299,6 +305,16 @@ export class TableService {
       table.seatingCapacity = seatingCapacity
         ? seatingCapacity
         : table.seatingCapacity;
+
+      // Check if QR code or QR code image is missing, generate if needed
+      if (!table.qrCode || !table.qrCodeImage) {
+        const { qrCodeUrl, qrCodeImage } = await generateTableQRCode(
+          table.restaurant.id,
+          table.id,
+        );
+        table.qrCode = qrCodeUrl;
+        table.qrCodeImage = qrCodeImage;
+      }
 
       table = await this.tableRepo.save(table);
 
@@ -416,23 +432,14 @@ export class TableService {
         return { status: 400, message: 'Table not found!' };
       }
 
-      // Generate QR code data URL
-      const qrCodeData = table.qrCode || uuidv4();
-      const qrCodeUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/menu/${table.restaurant.id}?table=${table.tableNumber}&qr=${qrCodeData}`;
+      // Generate QR code URL and image
+      const { qrCodeUrl, qrCodeImage } = await generateTableQRCode(
+        table.restaurant.id,
+        table.id,
+      );
 
-      const qrCodeImage = await QRCode.toDataURL(qrCodeUrl, {
-        width: 300,
-        margin: 2,
-        color: {
-          dark: '#000000',
-          light: '#FFFFFF',
-        },
-      });
-
-      // Update table with QR code data and image
-      if (!table.qrCode) {
-        table.qrCode = qrCodeData;
-      }
+      // Update table with QR code URL and image
+      table.qrCode = qrCodeUrl;
       table.qrCodeImage = qrCodeImage;
       await this.tableRepo.save(table);
 
@@ -442,7 +449,6 @@ export class TableService {
         data: {
           tableId: table.id,
           tableNumber: table.tableNumber,
-          qrCodeData: qrCodeData,
           qrCodeUrl: qrCodeUrl,
           qrCodeImage: qrCodeImage,
         },
@@ -469,20 +475,14 @@ export class TableService {
         return { status: 400, message: 'Table not found!' };
       }
 
-      const qrCodeData = uuidv4();
-      const qrCodeUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/menu/${table.restaurant.id}?table=${table.tableNumber}&qr=${qrCodeData}`;
+      // Generate QR code URL and image
+      const { qrCodeUrl, qrCodeImage } = await generateTableQRCode(
+        table.restaurant.id,
+        table.id,
+      );
 
-      const qrCodeImage = await QRCode.toDataURL(qrCodeUrl, {
-        width: 300,
-        margin: 2,
-        color: {
-          dark: '#000000',
-          light: '#FFFFFF',
-        },
-      });
-
-      // Update table with new QR code data and image
-      table.qrCode = qrCodeData;
+      // Update table with new QR code URL and image
+      table.qrCode = qrCodeUrl;
       table.qrCodeImage = qrCodeImage;
       await this.tableRepo.save(table);
 
@@ -492,7 +492,6 @@ export class TableService {
         data: {
           tableId: table.id,
           tableNumber: table.tableNumber,
-          qrCodeData: qrCodeData,
           qrCodeUrl: qrCodeUrl,
           qrCodeImage: qrCodeImage,
         },
